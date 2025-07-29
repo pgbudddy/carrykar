@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <title>Ride Summary</title>
+  <style>
+
+    /* Fullscreen Loader Styles */
+    .loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loader {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .car {
+        width: 102px;
+        height: 40px;
+    }
+
+    .car__body {
+        animation: shake 0.2s ease-in-out infinite alternate;
+    }
+
+    .car__line {
+        transform-origin: center right;
+        stroke-dasharray: 22;
+        animation: line 0.8s ease-in-out infinite;
+        animation-fill-mode: both;
+    }
+
+    .car__line--top {
+        animation-delay: 0s;
+    }
+
+    .car__line--middle {
+        animation-delay: 0.2s;
+    }
+
+    .car__line--bottom {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes shake {
+        0% {
+            transform: translateY(-1%);
+        }
+        100% {
+            transform: translateY(3%);
+        }
+    }
+
+    @keyframes line {
+        0% {
+            stroke-dashoffset: 22;
+        }
+        25% {
+            stroke-dashoffset: 22;
+        }
+        50% {
+            stroke-dashoffset: 0;
+        }
+        51% {
+            stroke-dashoffset: 0;
+        }
+        80% {
+            stroke-dashoffset: -22;
+        }
+        100% {
+            stroke-dashoffset: -22;
+        }
+    }
+
+
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column; /* Stack cards vertically */
+      align-items: center; /* Center cards horizontally */
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      border-radius: 12px;
+      width: 95%; /* Make it responsive */
+      padding: 16px;
+      overflow: hidden; /* Prevent content overflow */
+      font-family: 'Poppins', sans-serif;
+      /* border: 1px solid black; */
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .left, .right, .center {
+      flex: 1;
+      text-align: center;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .left {
+      text-align: left;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .right {
+      text-align: right;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .time, .sub-location {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .time .title {
+      font-weight: bold;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .sub-location p {
+      font-size: 13px;
+      color: #888;
+      line-height: 1.2;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    hr {
+      margin: 8px 0; /* Reduce spacing around the divider */
+      border: none;
+      border-top: 1px solid grey;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* .back-button {
+        position: fixed;
+        left: 20px;
+        top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 40px;
+        width: 40px;
+        border-radius: 10px;
+        background-color: white;
+        font-family: 'Poppins', sans-serif;
+    } */
+
+    /* Header Section */
+    .topheader {
+      position: fixed;
+      /* margin-left: 20px; */
+      background-color: white;
+      width: 99%;
+      top: 0px;
+      display: flex;
+      /* align-items: center;
+      justify-content: center; */
+      /* border: 1px solid black; */
+    }
+
+    .back-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 20px;
+    }
+
+    .back-button img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .text {
+        color: rgb(64, 64, 64);
+        font-weight: bold;
+        font-size: 20px;
+        margin-left: 15px;
+    }
+
+    .datetext {
+      margin-left: -70px;
+      margin-top: 50px;
+      width: 80%;
+      color: rgb(64, 64, 64);
+      font-size: 1.5rem;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .rider-details, .ride-type-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center; /* Vertically align items */
+        margin-top: 10px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .ride-type-details {
+        margin-top: -10px; /* Reduce margin to bring the sections closer */
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .rider-name, .price, .ride-type, .price-per-kg {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .price, .price-per-kg {
+      text-align: right; /* Align to the right */
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .people-count {
+      display: flex;
+      align-items: center;
+      margin-top: -10px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .people-count button {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0 5px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .people-count input {
+      width: 40px;
+      text-align: center;
+      border-radius: 25px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin: 0 5px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .kg-count {
+      display: flex;
+      align-items: center;
+      margin-top: -5px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .kg-count button {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0 5px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .kg-count input {
+      width: 40px;
+      text-align: center;
+      border-radius: 25px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin: 0 5px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .topay {
+      display: flex;
+      align-items: center;
+      margin-top: -10px;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .approval {
+      display: flex;
+      align-items: center;
+      margin-top: -10px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .header{
+        font-size: 17px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .vehicle-details {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .vehicle-details img {
+      width: 60px; /* Set the size for the vehicle image */
+      height: 60px;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .vehicle-info {
+      flex: 1;
+      text-align: left;
+      margin-left: 10px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .vehicle-info p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .vehicle-info .car-number {
+      font-size: 0.85rem;
+      color: #888;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Notes Text Styling */
+    .notestext {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #333;
+      /* overflow-y: auto; */
+      word-wrap: break-word; /* Prevents words from overflowing */
+      margin-top: 10px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .submitbutton{
+        margin-top: 30px;
+        width: 100%;
+        height: 45px;
+        border-radius: 25px;
+        border: 0px;
+        background: linear-gradient(90deg, #0E54B2 0%, #187BFF 44.5%, #63A5FF 100%);
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    
+  </style>
+</head>
+<body>
+
+
+    <!-- Loader Overlay (Initially Visible) -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader">
+            <svg class="car" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(2 1)" stroke="#002742" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="car__body" d="M47.293 2.375C52.927.792 54.017.805 54.017.805c2.613-.445 6.838-.337 9.42.237l8.381 1.863c2.59.576 6.164 2.606 7.98 4.531l6.348 6.732 6.245 1.877c3.098.508 5.609 3.431 5.609 6.507v4.206c0 .29-2.536 4.189-5.687 4.189H36.808c-2.655 0-4.34-2.1-3.688-4.67 0 0 3.71-19.944 14.173-23.902zM36.5 15.5h54.01" stroke-width="3" />
+                    <ellipse class="car__wheel--left" stroke-width="3.2" fill="#FFF" cx="83.493" cy="30.25" rx="6.922" ry="6.808" />
+                    <ellipse class="car__wheel--right" stroke-width="3.2" fill="#FFF" cx="46.511" cy="30.25" rx="6.922" ry="6.808" />
+                    <path class="car__line car__line--top" d="M22.5 16.5H2.475" stroke-width="3" />
+                    <path class="car__line car__line--middle" d="M20.5 23.5H.4755" stroke-width="3" />
+                    <path class="car__line car__line--bottom" d="M25.5 9.5h-19" stroke-width="3" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+
+
+
+
+    <!-- Header Section -->
+    <div class="topheader">
+      <a href="{{ url_for('main') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+          <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back">
+      </a>
+      <h2 class="text">Ride details</h2>
+    </div>
+
+    <h2 class="datetext">20 January 2025</h2>
+   
+    <div class="card">
+        <div class="row">
+          <p class="time left title" style="font-weight: bold;">{{ ride.start_time }}</p>
+          <p class="time center">{{ ride.duration }}</p>
+          <p class="time right title" style="font-weight: bold;">{{ ride.end_time }}</p>
+        </div>
+        <div class="row">
+          <div class="sub-location left">
+            <p>{{ ride.start_location }}</p>
+          </div>
+          <div class="sub-location center">
+            <p>{{ ride.distance }}</p>
+          </div>
+          <div class="sub-location right">
+            <p>{{ ride.end_location }}</p>
+          </div>
+        </div>
+
+        <hr />
+
+        <!-- Rider Details Section -->
+        <div class="rider-details">
+            <p class="rider-name">Rider: {{ ride.name }}</p>
+            <p class="price">Price per Passenger: {{ ride.passengerprice }}</p>
+        </div>
+
+        <!-- Ride Type and Price per KG Section -->
+        <div class="ride-type-details">
+            <p class="ride-type">Ride Type: {{ ride.ride_type }}</p>
+            <p class="price-per-kg">Price per Kg: {{ ride.kgprice }}</p>
+        </div>
+
+        <!-- Number of People Section -->
+        <div class="people-count">
+            <p class="ride-type">Number of people: &nbsp;&nbsp;&nbsp;</p>
+            <button onclick="decreasePeople()">-</button>
+            <input type="number" id="peopleCount" value="1" min="1" readonly />
+            <button onclick="increasePeople()">+</button>
+        </div>
+
+        <div class="kg-count">
+            <p class="ride-type">Total Weight in kg: &nbsp;&nbsp;&nbsp;</p>
+            <button onclick="kgdecreasePeople()">-</button>
+            <input type="number" id="kgCount" value="1" min="1" readonly />
+            <button onclick="kgincreasePeople()">+</button>
+        </div>
+
+        <div class="topay">
+            <p class="ride-type">Amount to pay: </p>
+        </div>
+
+        <div class="approval">
+          {% for passenger in passengers %}
+            <p class="ride-type">Approval: {{ passenger.approval }}</p>
+          {% endfor %}
+        </div>
+
+        <hr />
+
+        <!-- Vehicle Details Section -->
+        <h2 class="header">Vehicle details</h2>
+        <div class="vehicle-details">
+            <img src="{{ url_for('static', filename='images/car_checkbox.svg') }}" alt="Vehicle Image">
+            <div class="vehicle-info">
+              {% for cars in carmodel %}
+                <p class="vehicle-name">Model: {{ cars.carmodel }}</p>
+                <p class="car-number">Car Number: {{ cars.carnumber }}</p>
+              {% endfor %}
+            </div>
+        </div>
+
+        <hr />
+
+        <h2 class="header">Riders notes</h2>
+
+        <p class="notestext">{{ ride.details }}</p>
+        
+        <div class="bottom_button">
+          <form method="POST" id="ride-form">
+              <input type="hidden" name="totalprice" id="totalprice">
+              <input type="hidden" name="totalkgprice" id="totalkgprice">
+
+              <input type="hidden" name="showprice" id="showprice" value="{{ ride.passengerprice }}">
+              <input type="hidden" name="showkgprice" id="showkgprice" value="{{ ride.kgprice }}">
+
+              <input type="hidden" name="start_location" id="start_location" value="{{ ride.start_location }}">
+              <input type="hidden" name="end_location" id="end_location" value="{{ ride.end_location }}">
+
+              <center>
+              <input type="hidden" name="uniqueid" id="uniqueid" value="{{ ride.uniqueid }}">
+              
+              <!-- <input type="submit" value="Book"> -->
+              <button class="submitbutton" onclick="bookRide(event)">Book ride</button>
+              </center>
+          </form>
+    </div>
+
+    <script>
+
+
+          document.addEventListener('DOMContentLoaded', () => {
+            const loaderOverlay = document.getElementById('loader-overlay');
+            const content = document.getElementById('content');
+            const form = document.getElementById('time-form');
+    
+            // Hide loader and show content when the page loads
+            window.onload = () => {
+                loaderOverlay.style.display = 'none';
+                content.style.display = 'block';
+            };
+    
+            // Show loader when the form is submitted
+            form.addEventListener('submit', (e) => {
+                loaderOverlay.style.display = 'flex'; // Show loader
+                content.style.display = 'none'; // Hide content
+                // Form submission will proceed naturally
+            });
+        });
+
+
+
+
+    const passengerPriceStr = "{{ ride.passengerprice | default('0') }}".replace(/[^\d.]/g, '');
+    const kgPriceStr = "{{ ride.kgprice | default('0') }}".replace(/[^\d.]/g, '');
+
+    const passengerPrice = parseFloat(passengerPriceStr) || 0;
+    const kgPrice = parseFloat(kgPriceStr) || 0;
+
+
+    function updateAmountToPay() {
+        const peopleCount = parseInt(document.getElementById('peopleCount').value);
+        const kgCount = parseInt(document.getElementById('kgCount').value);
+
+        const totalAmount = (peopleCount * passengerPrice) + (kgCount * kgPrice);
+        document.querySelector('.topay p').innerHTML = `Amount to pay: ₹${totalAmount}`;
+
+        document.getElementById("totalprice").value = peopleCount * passengerPrice;
+        document.getElementById("totalkgprice").value = kgCount * kgPrice;
+
+    }
+
+    window.decreasePeople = function () {
+        const countInput = document.getElementById('peopleCount');
+        let count = parseInt(countInput.value);
+        if (count > 0) {
+            countInput.value = count - 1;
+            updateAmountToPay();
+        }
+    };
+
+    window.increasePeople = function () {
+        const countInput = document.getElementById('peopleCount');
+        countInput.value = parseInt(countInput.value) + 1;
+        updateAmountToPay();
+    };
+
+    window.kgdecreasePeople = function () {
+        const countInput = document.getElementById('kgCount');
+        let count = parseInt(countInput.value);
+        if (count > 0) {
+            countInput.value = count - 1;
+            updateAmountToPay();
+        }
+    };
+
+    window.kgincreasePeople = function () {
+        const countInput = document.getElementById('kgCount');
+        countInput.value = parseInt(countInput.value) + 1;
+        updateAmountToPay();
+    };
+
+
+
+
+    function bookRide(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const price = document.getElementById('showprice').innerHTML || null;
+            const kgprice = document.getElementById('showkgprice').innerHTML || null;
+            const uniqueid = document.getElementById('uniqueid').value || null;
+            const pickupcity = document.getElementById('start_location').value || null;
+            const dropcity = document.getElementById('end_location').value || null;
+
+
+            const totalPrice = document.getElementById("totalprice").value || null;
+            const totalKgPrice = document.getElementById("totalkgprice").value || null;
+
+            // const totalPrice = parseInt(price.split('₹ ')[1].trim() || 0) * personvalue;
+            // const totalKgPrice = parseInt(kgprice.split('₹ ')[1].trim() || 0) * kgvalue;
+
+            console.log("price ", totalPrice)
+            console.log("kgprice ", totalKgPrice)
+            console.log("uniqueid ", uniqueid)
+            console.log("pickupcity ", pickupcity)
+            console.log("dropcity ", dropcity)
+
+            fetch('/search_ride_details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uniqueid: uniqueid,
+                    price: totalPrice,
+                    kgprice: totalKgPrice,
+                    start_location: pickupcity,  // Add start location
+                    end_location: dropcity      // Add end location
+                })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Error in request');
+                    }
+                })
+                .then(data => {
+                    if (data.redirect) {
+                        // Redirect to the new page
+                        window.location.href = data.redirect;
+                    } else {
+                        console.log('Response:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
+        }
+
+
+
+
+  </script>
+</body>
+
+
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Rides</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        .header {
+            position: fixed;
+            /* margin-left: 20px; */
+            background-color: white;
+            width: 99%;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            /*justify-content: center; */
+            /* border: 1px solid black; */
+            height: 50px;   
+        }
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 20px;
+        }
+
+        .back-button img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .text {
+            color: rgb(64, 64, 64);
+            font-weight: bold;
+            font-size: 20px;
+            margin-left: 15px;
+        }
+
+        .datetext {
+            color: rgb(64, 64, 64);
+            font-weight: bold;
+            font-size: 20px;
+            margin-left: 25px;
+            margin-top: 80px;
+        }
+
+        /* Fullscreen Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .car {
+            width: 102px;
+            height: 40px;
+        }
+
+        .car__body {
+            animation: shake 0.2s ease-in-out infinite alternate;
+        }
+
+        .car__line {
+            transform-origin: center right;
+            stroke-dasharray: 22;
+            animation: line 0.8s ease-in-out infinite;
+            animation-fill-mode: both;
+        }
+
+        .car__line--top {
+            animation-delay: 0s;
+        }
+
+        .car__line--middle {
+            animation-delay: 0.2s;
+        }
+
+        .car__line--bottom {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateY(-1%);
+            }
+            100% {
+                transform: translateY(3%);
+            }
+        }
+
+        @keyframes line {
+            0% {
+                stroke-dashoffset: 22;
+            }
+            25% {
+                stroke-dashoffset: 22;
+            }
+            50% {
+                stroke-dashoffset: 0;
+            }
+            51% {
+                stroke-dashoffset: 0;
+            }
+            80% {
+                stroke-dashoffset: -22;
+            }
+            100% {
+                stroke-dashoffset: -22;
+            }
+        }
+
+
+        .card {
+            background-color: #fff;
+            border-radius: 12px;
+            /* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
+            /* border: 1px solid grey; */
+            width: 95%; /* Set a fixed width for the card */
+            padding: 16px;
+            margin-top: 10px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; /* Align to the top to reduce space */
+            margin: 0; /* Remove space between rows */
+            padding: 0; /* Remove any padding if it exists */
+        }
+
+        .left, .right, .center {
+            flex: 1;
+            text-align: center;
+        }
+
+        .left {
+            text-align: left;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .center {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .time, .sub-location {
+            margin: 0; /* Remove margins */
+            padding: 0; /* Remove padding */
+        }
+
+        .time .title, .sub-location .title {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .sub-location p {
+            font-size: 13px;
+            color: #888;
+            word-wrap: break-word; /* Break long words to prevent overflow */
+            line-height: 1.2; /* Adjust line height specifically for sub-location */
+        }
+
+        hr {
+            margin: 8px 0; /* Reduce spacing around the divider */
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        .ride-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-top: 8px; /* Reduce space between the ride details */
+        }
+
+        .ride-details div p {
+            margin: 0;
+            line-height: 1.3; /* Adjust line height for compactness */
+        }
+
+        .ride-details .highlight {
+            /* font-weight: bold; */
+            font-size: 15px;
+            color: #333;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+
+
+    <!-- Loader Overlay -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader">
+            <svg class="car" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(2 1)" stroke="#002742" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="car__body" d="M47.293 2.375C52.927.792 54.017.805 54.017.805c2.613-.445 6.838-.337 9.42.237l8.381 1.863c2.59.576 6.164 2.606 7.98 4.531l6.348 6.732 6.245 1.877c3.098.508 5.609 3.431 5.609 6.507v4.206c0 .29-2.536 4.189-5.687 4.189H36.808c-2.655 0-4.34-2.1-3.688-4.67 0 0 3.71-19.944 14.173-23.902zM36.5 15.5h54.01" stroke-width="3" />
+                    <ellipse class="car__wheel--left" stroke-width="3.2" fill="#FFF" cx="83.493" cy="30.25" rx="6.922" ry="6.808" />
+                    <ellipse class="car__wheel--right" stroke-width="3.2" fill="#FFF" cx="46.511" cy="30.25" rx="6.922" ry="6.808" />
+                    <path class="car__line car__line--top" d="M22.5 16.5H2.475" stroke-width="3" />
+                    <path class="car__line car__line--middle" d="M20.5 23.5H.4755" stroke-width="3" />
+                    <path class="car__line car__line--bottom" d="M25.5 9.5h-19" stroke-width="3" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+
+    <div class="header">
+        <a href="{{ url_for('my_hosted_rides') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back">
+        </a>
+        <h2 class="text">Hosted rides details</h2>
+    </div>
+
+    <h2 class="datetext">{{ ride.date }}</h2>
+
+    <center>
+    <div class="card">
+        <!-- First Row: Start Time, Duration (Center), End Time -->
+        <div class="row">
+        <p class="time left title" style="font-weight: bold;">{{ ride.start_time }}</p>
+        <p class="time center">{{ ride.duration }}</p>
+        <p class="time right title" style="font-weight: bold;">{{ ride.end_time }}</p>
+        </div>
+
+        <!-- Second Row: Start Sub Location, Distance (Center), End Sub Location -->
+        <div class="row">
+        <div class="sub-location left">
+            <p>{{ ride.start_location }}</p>
+        </div>
+        <div class="sub-location center">
+            <p>{{ ride.distance }}</p>
+        </div>
+        <div class="sub-location right">
+            <p>{{ ride.end_location }}</p>
+        </div>
+        </div>
+
+        <hr />
+
+        <!-- Ride Details -->
+        <div class="ride-details">
+            <div style="text-align: left; width: 50%;">
+                <p class="highlight">Total weight allow: <strong>{{ ride.kgcount }}Kg</strong></p>
+                <p class="highlight">No of people allow: <strong>{{ ride.passengers }}</strong></p>
+                <p class="highlight">Ride type: <strong>{{ ride.ride_type }}</strong></p>
+                
+            </div>
+            <div style="text-align: right; width: 50%;">
+                <p class="highlight"><strong>{{ ride.passengerprice }}</strong> per person</p>
+                <p class="highlight"><strong>{{ ride.kgprice }}</strong> per kg</p>
+            </div>
+        </div>
+
+        <hr />
+        
+        <!-- Passenger Details Section -->
+        <h3 class="left" style="color: rgb(64, 64, 64);">Passenger list</h3>
+        <br>
+            <div class="card2">
+                {% if passengers %}
+                {% for passenger in passengers %}
+                <div class="passenger" style="margin-bottom: 20px;">
+                    <div class="row" style="align-items: center;">
+                        <img src="{{ url_for('static', filename='images/profile_profile.png') }}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%;">
+                        <div style="margin-left: 10px; text-align: left;">
+                            <p style="font-weight: bold; color: rgb(64, 64, 64);">{{ passenger.name }}</p>
+                            <p style="color: rgb(64, 64, 64); cursor: pointer; font-size: 13px;">Person: ₹ {{ passenger.personcount }}</p>
+                            <p style="color: rgb(64, 64, 64); cursor: pointer; font-size: 13px;">Weight: ₹ {{ passenger.kgcount }}</p>
+                            <!-- <p style="color: blue; cursor: pointer; font-size: 13px;">{{ passenger.number }}</p> -->
+                        </div>
+                        <div style="flex-grow: 1; text-align: right;">
+                            {% if passenger.approval == "pending" %}
+                            <button onclick="approvePassenger('{{ passenger.number }}')" style="margin-right: 10px; background: none; border: none; cursor: pointer; font-size: 20px;">
+                                ✅
+                            </button>
+                            <button onclick="rejectPassenger('{{ passenger.number }}')" style="background: none; border: none; cursor: pointer; font-size: 20px;">
+                                ❌
+                            </button>
+                            {% elif passenger.approval == "accepted" %}
+                            <p style="font-size: 15px; color: rgb(64, 64, 64);">Approved</p>
+                            {% elif passenger.approval == "rejected" %}
+                            <p style="font-size: 15px; color: rgb(64, 64, 64);">Rejected</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                    <h4 style="color: rgb(64, 64, 64);">No passengers for this ride</h4>
+                    <br>
+                {% endif %}
+            </div>
+
+        <hr />
+
+        <h3 class="left" style="color: rgb(64, 64, 64);">More details</h3>
+
+        <p class="left" style="margin-top: 10px; color: rgb(64, 64, 64); font-size: 15px;">{{ ride.details }}</p>
+
+        <hr />
+        
+        <div class="delete" style="display: flex; justify-content: space-between; margin-top: 20px;" data-uniqueid="{{ ride.uniqueid }}">
+            <p style="color: #636363; font-weight: bold; font-family: 'Poppins', sans-serif;">Cancel your publication</p>
+            <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="rightarrow" style="width: 30px; height: 30px; margin-left: 10px; margin-top: -3px;">
+        </div>
+
+    </div>  
+    </center>
+        
+    <script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loaderOverlay = document.getElementById('loader-overlay');
+            const content = document.getElementById('content');
+            const form = document.getElementById('ride_details-form');
+    
+            // Hide loader and show content when the page loads
+            window.onload = () => {
+                loaderOverlay.style.display = 'none';
+                content.style.display = 'block';
+            };
+    
+            // Show loader when the form is submitted
+            form.addEventListener('submit', (e) => {
+                loaderOverlay.style.display = 'flex'; // Show loader
+                content.style.display = 'none'; // Hide content
+                // Form submission will proceed naturally
+            });
+        });
+
+
+        function approvePassenger(number) {
+            console.log('Approving passenger with number:', number);
+            fetch('/approve_passenger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // Use `.json()` if the server returns JSON
+            })
+            .then(data => {
+                console.log('Server response:', data);
+                if (data.success) {
+                    // console.log(data.message || 'Passenger approved successfully!');
+                    location.reload(); // Refresh the page
+                } else {
+                    // console.log(`Failed to approve passenger: ${data.message}`);
+                }
+            })
+            .catch(err => {
+                console.error('Error approving passenger:', err);
+                // console.log('Error approving passenger. Please try again.');
+            });
+        }
+
+
+        function rejectPassenger(number) {
+            console.log('Rejecting passenger with number:', number);
+            fetch('/reject_passenger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ number })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // Use `.json()` if the server returns JSON
+            })
+            .then(data => {
+                console.log('Server response:', data);
+                if (data.success) {
+                    // console.log(data.message || 'Passenger rejected successfully!');
+                    location.reload(); // Refresh the page
+                } else {
+                    // console.log(`Failed to reject passenger: ${data.message}`);
+                }
+            })
+            .catch(err => {
+                console.error('Error rejecting passenger:', err);
+                // console.log('Error rejecting passenger. Please try again.');
+            });
+        }
+
+
+
+        document.querySelector('.delete').addEventListener('click', function () {
+            const uniqueid = this.getAttribute('data-uniqueid');
+            console.log('Unique ID:', uniqueid);
+
+            if (!uniqueid) {
+                // console.log('Unique ID not found!');
+                return;
+            }
+
+            fetch(`/delete_ride`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ uniqueid: uniqueid }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response Data:', data);
+                    if (data.success) {
+                        // console.log('Ride canceled successfully.');
+                        // Redirect to the rides page
+                        window.location.href = "/your_rides";
+                    } else {
+                        // console.log(`Failed to cancel the ride: ${data.message}`);
+                        // Stay on the details page
+                        // Optionally, you can refresh the current page
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // console.log('An unexpected error occurred. Please try again.');
+                });
+        });
+    </script>
+            
+</body>
+</html>

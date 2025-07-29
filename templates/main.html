@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdc5N7AzzvPiWddsegRCRmna3LxG5HCmk&libraries=places"></script>
+    <script>
+        function initializeAutocomplete() {
+            const leavingInput = document.getElementById("leaving_text");
+            const goingInput = document.getElementById("going_text");
+            
+            new google.maps.places.Autocomplete(leavingInput);
+            new google.maps.places.Autocomplete(goingInput);
+        }
+        
+        document.addEventListener("DOMContentLoaded", initializeAutocomplete);
+    </script>
+    <style>
+        /* Basic reset for padding and margins */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        /* Style for the main container */
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* First div: occupies 65% of the viewport height with gradient background */
+        .div1 {
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(to bottom, #0747A9, #2277C9);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Aligns children to the bottom */
+            padding: 20px; /* Add some padding */
+            position: relative; /* Set position relative for absolute child positioning */
+            text-align: center; /* Center text horizontally */
+        }
+        /* Text styling in the first div */
+        .text {
+            color: white; /* Text color */
+            font-family: 'Poppins', sans-serif; /* Poppins font */
+            position: absolute; /* Position text absolutely within the div */
+            width: 100%;
+            top: 30px; /* Space from the top */
+            left: 50%; /* Move left to the center */
+            transform: translateX(-50%); /* Adjust position to center it */
+        }
+        /* Image styling for the image inside div1 */
+        .div1 img {
+            max-width: 100%;
+            max-height: 80%; /* Limit the height of the image */
+            object-fit: contain;
+            margin-top: auto; /* Push the image to the bottom */
+        }
+        /* Menu bar styling at the bottom */
+        .menu-bar {
+            position: fixed;
+            bottom: 0;
+            height: 55px;
+            width: 100%;
+            border-top: 1px solid lightgray;
+            display: flex;
+            justify-content: space-around;
+            padding: 0px;
+            color: grey;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            font-size: 12px;
+        }
+        /* Row items inside the menu bar */
+        .menu-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column; /* Stack image and text vertically */
+            align-items: center; /* Center-align both image and text */
+            justify-content: flex-end; /* Align the content to the bottom */
+            font-size: 12px;
+            color: grey;
+            font-family: 'Poppins', sans-serif;
+            text-align: center; /* Center text horizontally */
+            padding-bottom: 3px; /* Add space to keep text at the bottom of the page */
+        }
+        .menu-item img {
+            width: 25px; /* Adjust image size */
+            height: auto;
+            margin-bottom: -15px;
+        }
+
+
+        /* Centered menu bar with 5 rows */
+        .center-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Makes items stretch to fit available space */
+            background-color: white;
+            padding: 16px;
+            border-radius: 10px;
+        }
+        /* Each item inside the center menu */
+        .center-menu-item {
+            flex: 1;
+            display: flex;
+            flex-direction: row; /* Align items horizontally */
+            align-items: center; /* Center vertically */
+            color: grey;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+        .center-menu-item img {
+            width: 35px;
+            height: auto;
+            margin-right: 5px; /* Space between image and text/input */
+        }
+        .center-menu-item input {
+            font-size: 14px;
+            font-weight: bold;
+            padding: 5px;
+            height: 100%;
+            color: grey;
+            width: 100%; /* Adjust input width */
+            border: 0px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .center-menu-item p {
+            font-size: 14px;
+            width: 100%; /* Adjust input width */
+            font-size: 14px; 
+            /* border: 1px solid black;  */
+            height: 100%; 
+            width: 100%; 
+            padding: 15px; 
+            padding-left: 10px;
+            font-weight: bold; 
+            text-align: left; 
+            background-color: white; 
+            color: grey;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Fullscreen Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .car {
+            width: 102px;
+            height: 40px;
+        }
+
+        .car__body {
+            animation: shake 0.2s ease-in-out infinite alternate;
+        }
+
+        .car__line {
+            transform-origin: center right;
+            stroke-dasharray: 22;
+            animation: line 0.8s ease-in-out infinite;
+            animation-fill-mode: both;
+        }
+
+        .car__line--top {
+            animation-delay: 0s;
+        }
+
+        .car__line--middle {
+            animation-delay: 0.2s;
+        }
+
+        .car__line--bottom {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateY(-1%);
+            }
+            100% {
+                transform: translateY(3%);
+            }
+        }
+
+        @keyframes line {
+            0% {
+                stroke-dashoffset: 22;
+            }
+            25% {
+                stroke-dashoffset: 22;
+            }
+            50% {
+                stroke-dashoffset: 0;
+            }
+            51% {
+                stroke-dashoffset: 0;
+            }
+            80% {
+                stroke-dashoffset: -22;
+            }
+            100% {
+                stroke-dashoffset: -22;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- Loader Overlay -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader">
+            <svg class="car" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(2 1)" stroke="#002742" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="car__body" d="M47.293 2.375C52.927.792 54.017.805 54.017.805c2.613-.445 6.838-.337 9.42.237l8.381 1.863c2.59.576 6.164 2.606 7.98 4.531l6.348 6.732 6.245 1.877c3.098.508 5.609 3.431 5.609 6.507v4.206c0 .29-2.536 4.189-5.687 4.189H36.808c-2.655 0-4.34-2.1-3.688-4.67 0 0 3.71-19.944 14.173-23.902zM36.5 15.5h54.01" stroke-width="3" />
+                    <ellipse class="car__wheel--left" stroke-width="3.2" fill="#FFF" cx="83.493" cy="30.25" rx="6.922" ry="6.808" />
+                    <ellipse class="car__wheel--right" stroke-width="3.2" fill="#FFF" cx="46.511" cy="30.25" rx="6.922" ry="6.808" />
+                    <path class="car__line car__line--top" d="M22.5 16.5H2.475" stroke-width="3" />
+                    <path class="car__line car__line--middle" d="M20.5 23.5H.4755" stroke-width="3" />
+                    <path class="car__line car__line--bottom" d="M25.5 9.5h-19" stroke-width="3" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <!-- First div with gradient background -->
+        <div class="div1">
+            <!-- Text elements at the top -->
+            <div class="text">
+                <p style="font-size: 25px; font-weight: bold;">Your pick of rides at<br>low prices</p>
+            </div>
+            <!-- Image positioned at the bottom -->
+            <img src="{{ url_for('static', filename='images/main.png') }}" alt="Sample Image">
+        </div>
+
+
+        <!-- Centered menu bar with 5 rows -->
+        <form action="{{ url_for('main') }}" method="POST" id="main-form">
+        <div class="center-menu">
+            <div class="center-menu-item" style="border-bottom: 1px solid gray;">
+                <img src="{{ url_for('static', filename='images/location.svg') }}" alt="location">
+                <input type="text" placeholder="Leaving from" name="leaving_text" id="leaving_text" value="{{ leaving_text }}">
+            </div>
+            <div class="center-menu-item" style="border-bottom: 1px solid gray;">
+                <img src="{{ url_for('static', filename='images/location.svg') }}" alt="location">
+                <input type="text" placeholder="Going to" name="going_text" id="going_text" value="{{ going_text }}">
+            </div>
+            <div class="center-menu-item" style="border-bottom: 1px solid gray;">
+                <img src="{{ url_for('static', filename='images/calender.svg') }}" alt="calender">
+                <input type="date" name="calendar" id="calendar" placeholder="dd/mm/yyyy" style="padding-left: 10px; color: grey; border: 0px; background-color: white; height: 100%; width: 100%;">
+            </div>
+            <div class="center-menu-item">
+                <img src="{{ url_for('static', filename='images/person.svg') }}" alt="person">
+                <!-- <input type="text" style="border: 0px;" placeholder="Person"> -->
+                <input type="text" name="person" id="person" style="font-size: 14px; border: 0px; height: 100%; width: 100%; padding: 5px 10px; font-weight: bold; color: grey; background-color: white; font-family: 'Poppins', sans-serif;" placeholder="Person">
+            </div>
+            <div class="center-menu-item">
+                <input type="submit" style="margin-top: 10px; background-color: #053e7a; width: 100%; border: 0px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; color: white; font-size: 15px;" value="Search">
+            </div>
+        </div>
+        </form>
+
+
+    <!-- Menu bar at the bottom with 4 rows -->
+    <div class="menu-bar">
+        <div class="menu-item" onclick="location.href='{{ url_for('main') }}'">
+            <img src="{{ url_for('static', filename='images/search_grey.svg') }}" alt="home">
+            <br>Home
+        </div>
+        <div class="menu-item" onclick="location.href='{{ url_for('pickup') }}'">
+            <img src="{{ url_for('static', filename='images/add.svg') }}" alt="publish">
+            <br>Host Ride
+        </div>
+        <div class="menu-item" onclick="location.href='{{ url_for('my_hosted_rides') }}'">
+            <img src="{{ url_for('static', filename='images/car.svg') }}" alt="your_ride">
+            <br>My rides
+        </div>
+        <div class="menu-item" onclick="location.href='{{ url_for('chat') }}'">
+            <img src="{{ url_for('static', filename='images/message.svg') }}" alt="your_ride">
+            <br>Message
+        </div>
+        <div class="menu-item" onclick="location.href='{{ url_for('profile') }}'">
+            <img src="{{ url_for('static', filename='images/profile_profile.svg') }}" alt="profile">
+            <br>Profile
+        </div>
+    </div>
+    
+
+    </div>
+    
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loaderOverlay = document.getElementById('loader-overlay');
+            const content = document.getElementById('content');
+            const form = document.getElementById('main-form');
+    
+            // Hide loader and show content when the page loads
+            window.onload = () => {
+                loaderOverlay.style.display = 'none';
+                content.style.display = 'block';
+            };
+    
+            // Show loader when the form is submitted
+            form.addEventListener('submit', (e) => {
+                loaderOverlay.style.display = 'flex'; // Show loader
+                content.style.display = 'none'; // Hide content
+                // Form submission will proceed naturally
+            });
+        });
+    </script>
+
+</body>
+</html>

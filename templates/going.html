@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drop-off Location</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevents scroll */
+        }
+
+        /* Fullscreen Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .car {
+            width: 102px;
+            height: 40px;
+        }
+
+        .car__body {
+            animation: shake 0.2s ease-in-out infinite alternate;
+        }
+
+        .car__line {
+            transform-origin: center right;
+            stroke-dasharray: 22;
+            animation: line 0.8s ease-in-out infinite;
+            animation-fill-mode: both;
+        }
+
+        .car__line--top {
+            animation-delay: 0s;
+        }
+
+        .car__line--middle {
+            animation-delay: 0.2s;
+        }
+
+        .car__line--bottom {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateY(-1%);
+            }
+            100% {
+                transform: translateY(3%);
+            }
+        }
+
+        @keyframes line {
+            0% {
+                stroke-dashoffset: 22;
+            }
+            25% {
+                stroke-dashoffset: 22;
+            }
+            50% {
+                stroke-dashoffset: 0;
+            }
+            51% {
+                stroke-dashoffset: 0;
+            }
+            80% {
+                stroke-dashoffset: -22;
+            }
+            100% {
+                stroke-dashoffset: -22;
+            }
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 5px;
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+
+        .back-button img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .text {
+            color: rgb(64, 64, 64);
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        /* Map container */
+        #map {
+            flex: 1;
+            width: 100%;
+            height: 100%; /* Ensures the map takes up remaining space */
+        }
+
+        /* Input container */
+        .input-container {
+            position: relative;
+            z-index: 2;
+            padding: 10px;
+            background-color: white;
+        }
+
+        .input-container input {
+            font-size: 15px;
+            width: 100%;
+            height: 40px;
+            background-color: lightgray;
+            border: 0;
+            border-radius: 5px;
+            padding: 10px;
+            outline: none;
+            margin-top: 20px;
+        }
+
+        .next-button {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 10; /* Ensures the button appears above the map */
+            background-color: #0747A9;
+            border-radius: 50px;
+            border: 0px;
+            height: 55px;
+            width: 55px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loader Overlay (Initially Visible) -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader">
+            <svg class="car" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(2 1)" stroke="#002742" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="car__body" d="M47.293 2.375C52.927.792 54.017.805 54.017.805c2.613-.445 6.838-.337 9.42.237l8.381 1.863c2.59.576 6.164 2.606 7.98 4.531l6.348 6.732 6.245 1.877c3.098.508 5.609 3.431 5.609 6.507v4.206c0 .29-2.536 4.189-5.687 4.189H36.808c-2.655 0-4.34-2.1-3.688-4.67 0 0 3.71-19.944 14.173-23.902zM36.5 15.5h54.01" stroke-width="3" />
+                    <ellipse class="car__wheel--left" stroke-width="3.2" fill="#FFF" cx="83.493" cy="30.25" rx="6.922" ry="6.808" />
+                    <ellipse class="car__wheel--right" stroke-width="3.2" fill="#FFF" cx="46.511" cy="30.25" rx="6.922" ry="6.808" />
+                    <path class="car__line car__line--top" d="M22.5 16.5H2.475" stroke-width="3" />
+                    <path class="car__line car__line--middle" d="M20.5 23.5H.4755" stroke-width="3" />
+                    <path class="car__line car__line--bottom" d="M25.5 9.5h-19" stroke-width="3" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="header">
+        <a href="{{ url_for('main') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back">
+        </a>
+        <h2 class="text">Drop-off</h2>
+    </div>
+
+    <form method="POST" id="going-form" onsubmit="handleFormSubmit(event)">
+
+    <!-- Input Section (Placed Above Map) -->
+    <div class="input-container">
+        <input type="text" id="droplocation" name="droplocation" placeholder="Enter drop-off location">
+    </div>
+    <!-- Next Button -->
+    <button class="next-button" type="submit" style="-webkit-tap-highlight-color: transparent; background-color: #0747A9; border-radius: 50px; border: 0px; height: 55px; width: 55px;">
+        <img src="{{ url_for('static', filename='images/forward.png') }}" alt="Next" style="width: 30px; height: 30px; position: absolute; left: 50%; top: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);">
+    </button>
+    </form>
+
+    <!-- Map Section -->
+    <div id="map"></div>
+
+
+
+    <script>
+
+            // Handle input changes
+            const input = document.getElementById('droplocation');
+            input.addEventListener('input', function () {
+                const droplocation = input.value; // Correct parameter name
+
+                if (droplocation.length > 2) { // Avoid excessive API calls
+                    fetch('/going', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ droplocation: droplocation }) // Match Flask key
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.coordinates) {
+                            const { lat, lng } = data.coordinates;
+                            updateMap(lat, lng);
+                        } else {
+                            console.error('Error fetching coordinates:', data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+
+
+
+        let map;
+        let marker;
+        let autocomplete;
+
+        // Initialize Google Map and Autocomplete
+        function initMap() {
+            document.getElementById('loader-overlay').style.display = 'flex'; // Show loader
+
+            // Initialize the map
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 19.1889541, lng: 72.835543 }, // Default center if geolocation fails
+                zoom: 14,
+            });
+
+            // Try to get user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                        };
+                        updateMap(userLocation.lat, userLocation.lng);
+                        document.getElementById('loader-overlay').style.display = 'none'; // Hide loader
+                    },
+                    () => {
+                        console.warn("Geolocation permission denied or unavailable.");
+                        document.getElementById('loader-overlay').style.display = 'none'; // Hide loader
+                    }
+                );
+            } else {
+                console.warn("Geolocation is not supported by this browser.");
+                document.getElementById('loader-overlay').style.display = 'none'; // Hide loader
+            }
+
+            // Initialize Autocomplete for the input field
+            const input = document.getElementById('droplocation');
+            autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.bindTo('bounds', map);
+
+            // Listen for place selection
+            autocomplete.addListener('place_changed', () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+                    updateMap(lat, lng);
+                }
+            });
+        }
+
+        // Update map with new location and place a marker
+        function updateMap(lat, lng) {
+            map.setCenter({ lat, lng });
+            if (marker) {
+                marker.setMap(null); // Remove the previous marker
+            }
+            marker = new google.maps.Marker({
+                position: { lat, lng },
+                map: map,
+                title: "Drop-off location",
+            });
+        }
+
+        // Initialize the map when the page loads
+        window.onload = initMap;
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdc5N7AzzvPiWddsegRCRmna3LxG5HCmk&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>

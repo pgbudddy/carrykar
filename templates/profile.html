@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset for padding and margins */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* Style for the main container */
+        .container {
+            width: 100%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .back-button {
+            position: fixed; /* Position it at the top */
+            left: 20px; /* Space from the left */
+            top: 20px; /* Space from the top */
+            z-index: 1;
+        }
+        .profile{
+            display: flex;
+            width: 100%;
+            margin-top: 80px;
+            position: relative;
+            border: 0px solid black;
+        }
+        .profile p{
+            font-family: 'Poppins', sans-serif;
+            font-weight: bold;
+            color: black;
+            font-size: 30px;
+            margin-left: 150px;
+            margin-top: 10px;
+        }
+        .profile img{
+            width: 90px;
+            position: absolute;
+            left: 0;
+            margin-left: 30px;
+        }
+        .profile p:nth-child(3){
+            font-family: 'Poppins', sans-serif;
+            color: #0B4DAD;
+            font-size: 16px;
+            margin-top: 140px;
+            margin-left: 40px;
+            left: 0;
+            font-weight: normal;
+            position: absolute;
+        }
+        .profile p:nth-child(4){
+            width: 90%;
+            height: 2px;
+            background-color: black;
+            position: absolute;
+            margin-top: 145px;
+        }
+        .borderline-bottom {
+            width: 90%;
+            height: 2px;
+            background-color: lightgrey;
+            margin-top: 90px;
+        }
+        .verify {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 40px;
+            margin-left: 30px;
+        }
+        .verify h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: bold;
+            color: black;
+            font-size: 20px;
+        }
+        .verify .govt-id {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            margin-left: 5px;
+        }
+        .verify .email {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            margin-left: 5px;
+        }
+        .verify .number {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            margin-left: 5px;
+        }
+        .verify img {
+            width: 25px; /* Small plus image size */
+            height: 25px;
+            margin-right: 20px; /* Space between image and text */
+        }
+        .verify p {
+            font-family: 'Poppins', sans-serif;
+            color: #0B4DAD;
+            font-size: 16px;
+        }
+        .borderline-verify {
+            width: 90%;
+            height: 2px;
+            background-color: lightgrey;
+            margin-top: 40px;
+        }
+        .vehicle {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 40px;
+            margin-left: 30px;
+        }
+        .vehicle h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: bold;
+            color: black;
+            font-size: 20px;
+        }
+        .vehicle .addvehicle {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            margin-left: 5px;
+        }
+        .bank {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 40px;
+            margin-left: 30px;
+        }
+        .bank h1 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: bold;
+            color: black;
+            font-size: 20px;
+        }
+        .bank .addbank {
+            display: flex;
+            align-items: center;
+            margin-top: 30px;
+            margin-left: 5px;
+        }
+        .vehicle img {
+            width: 25px; /* Small plus image size */
+            height: 25px;
+            margin-right: 20px; /* Space between image and text */
+        }
+        .vehicle p {
+            font-family: 'Poppins', sans-serif;
+            color: #0B4DAD;
+            font-size: 16px;
+        }
+        .bank img {
+            width: 25px; /* Small plus image size */
+            height: 25px;
+            margin-right: 20px; /* Space between image and text */
+        }
+        .bank p {
+            font-family: 'Poppins', sans-serif;
+            color: #0B4DAD;
+            font-size: 16px;
+        }
+        .borderline-vehicle {
+            width: 90%;
+            height: 2px;
+            background-color: lightgrey;
+            margin-top: 45px;
+        }
+        .account {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 10px;
+            margin-left: 30px;
+        }
+        .account .help {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .account .tnc {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .account .protection {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .account .policy {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .account .password {
+            display: flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .account img {
+            width: 25px; /* Small plus image size */
+            height: 25px;
+            margin-right: 30px; /* Space between image and text */
+            right: 0;
+            position: absolute;
+            margin-top: 30px;
+        }
+        .account p {
+            font-family: 'Poppins', sans-serif;
+            color: grey;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        .borderline-account {
+            width: 90%;
+            height: 2px;
+            background-color: lightgrey;
+            margin-top: 45px;
+        } 
+        .account_2 {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 10px;
+            margin-left: 30px;
+        }
+        .account_2 p {
+            font-family: 'Poppins', sans-serif;
+            color: #0B4DAD;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #796eff; /* Semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            width: 90%;
+            height: 90%;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #796eff;
+            text-align: center;
+            position: relative; /* Ensure child elements can use absolute positioning */
+        }
+
+        .popup-content h2{
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .popup-content p{
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            font-size: 17px;
+            margin-top: 10px;
+        }
+
+        .popup-content img{
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .popup-content button {
+            position: absolute; /* Position the button relative to .popup-content */
+            bottom: 20px; /* Space from the bottom edge */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%); /* Adjust centering */
+            padding: 10px 20px;
+            background-color: white;
+            color: #5e51ff;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: bold;
+            border: 0px;
+        }
+
+        .popup-content button:hover {
+            background-color: #4343ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+        <a href="{{ url_for('main') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back" style="width: 30px; height: 30px;">
+        </a>
+
+        {% for passenger in passengers %}
+        <div class="profile">
+            <p>{{ passenger.firstname }}</p>
+            <img src="{{ url_for('static', filename='images/profile_profile.png') }}" alt="profile">
+            <!-- <p>Edit personal details</p> -->
+        </div>
+
+        <center><div class="borderline-bottom"></div></center>
+
+        <div class="verify"{% if passenger.kycverification != "yes" %} 
+        onclick="location.href='{{ url_for('add_kyc') }}'"
+        {% endif %}>
+            <h1>Verify your profile</h1>
+            <div class="govt-id">
+                {% if passenger.kycverification == "yes" %}
+                    <img src="{{ url_for('static', filename='images/verified.png') }}" alt="govtidemail">
+                    <p style="color: grey;">Govt.ID verified</p>
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="govtidemail">
+                    <p>Verify your Govt.ID</p>
+                {% endif %}
+            </div>
+            <div class="email" 
+            {% if passenger.emailverification != "yes" %} 
+            onclick="sendEmailVerification()"
+            {% endif %}>
+                {% if passenger.emailverification == "yes" %}
+                    <img src="{{ url_for('static', filename='images/verified.png') }}" alt="emailimage">
+                    <p style="color: grey;">{{ passenger.emailid }}</p>
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="emailimage">
+                    <p>Confirm email<br>{{ passenger.emailid }}</p>
+                {% endif %}
+            </div>
+            <div class="number">
+                <img src="{{ url_for('static', filename='images/verified.png') }}" alt="numberimage">
+                <p style="color: grey;">{{ passenger.number }}</p>
+            </div>
+        </div>
+
+        <center><div class="borderline-verify"></div></center>
+
+        <div class="vehicle">
+            <h1>Vehicles</h1>       
+            {% if vehicles|length == 0 %}
+                <div class="addvehicle" onclick="location.href='{{ url_for('add_vehicle') }}'">
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="Add vehicle">
+                    <p>Add vehicle</p>
+                </div>
+            {% else %}
+            {% for vehicle in vehicles %}  
+                <div class="addvehicle">
+                    <img src="{{ url_for('static', filename='images/verified.png') }}" alt="vehicleimage">
+                    <p style="color: grey;">{{ vehicle.carnumber }}</p>
+                </div>
+                <div class="addvehicle" onclick="location.href='{{ url_for('add_vehicle') }}'">
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="Add vehicle">
+                    <p>Update vehicle</p>
+                </div>
+            {% endfor %}
+            {% endif %}
+            
+        </div>
+
+        <center><div class="borderline-vehicle"></div></center>
+
+        <div class="bank">
+            <h1>Bank Account</h1>       
+            {% if banks_arrays|length == 0 %}
+                <div class="addbank" onclick="location.href='{{ url_for('add_bank_account') }}'">
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="Add vehicle">
+                    <p>Add account</p>
+                </div>
+            {% else %}
+            {% for banks_array in banks_arrays %}  
+                <div class="addbank">
+                    <img src="{{ url_for('static', filename='images/verified.png') }}" alt="vehicleimage">
+                    <p>{{ banks_array.bankname }}</p>
+                </div>
+                <div class="addbank" onclick="location.href='{{ url_for('add_bank_account') }}'">
+                    <img src="{{ url_for('static', filename='images/plus.png') }}" alt="Add vehicle">
+                    <p>Update account</p>
+                </div>
+            {% endfor %}
+            {% endif %}
+            
+        </div>
+
+        <center><div class="borderline-vehicle"></div></center>
+
+        <div class="account">
+            <div class="password" onclick="location.href='{{ url_for('change_password') }}'">
+                <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="changepasswordimage">
+                <p>Change password</p>
+            </div>
+            <div class="help" onclick="location.href='{{ url_for('help') }}'">
+                <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="helpimage">
+                <p>Help</p>
+            </div>
+            <div class="tnc" onclick="location.href='{{ url_for('tnc') }}'">
+                <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="tncimage">
+                <p>Terms and Conditions</p>
+            </div>
+            <div class="policy" onclick="location.href='{{ url_for('privacy_policy') }}'">
+                <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="ppcpolicy">
+                <p>Privacy policy</p>
+            </div>
+            <div class="protection" onclick="location.href='{{ url_for('refundpolicy') }}'">
+                <img src="{{ url_for('static', filename='images/rightarrow.png') }}" alt="dataprotectionimage">
+                <p>Refund policy</p>
+            </div>
+        </div>
+
+        <center><div class="borderline-account"></div></center>
+
+        <div class="account_2">
+            <div class="logout" onclick="location.href='{{ url_for('logout') }}'">
+                <p>Logout</p>
+            </div>
+        </div>
+
+        <br><br>
+
+        {% endfor %}
+    </div>
+
+
+    <div id="email-verification-popup" class="popup" style="display: none;">
+        <div class="popup-content">
+            <h2>Verify your Email</h2>
+            <p>We've sent a verification link to<br>your email address</p>
+            <img src="{{ url_for('static', filename='images/plane.png') }}" alt="plane">
+            <center><button onclick="closePopup()">Close</button></center>
+        </div>
+    </div>
+
+
+    {% for passenger in passengers %}
+    <script>
+        // Display the popup when email is not verified
+        function handleEmailClick() {
+            document.getElementById('email-verification-popup').style.display = 'flex';
+        }
+    
+        function sendEmailVerification() {
+            console.log('Sending email verification...');
+            // Simulate an API call to send the verification email
+            fetch('/send_email_verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: "{{ passenger.emailid }}" })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error sending verification email');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+                // console.log('Verification email sent!');
+                handleEmailClick();
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                // console.log('Failed to send verification email. Please try again.');
+            });
+        }
+    
+        // Close the popup
+        function closePopup() {
+            document.getElementById('email-verification-popup').style.display = 'none';
+        }
+    </script>
+    
+    {% endfor %}
+    
+
+</body>
+</html>

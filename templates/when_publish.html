@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Scroll Calendar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .calendar-container {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            /* max-height: 100vh; */
+            scroll-snap-type: y mandatory;
+        }
+
+        .month-section {
+            scroll-snap-align: start;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+            background-color: #fff;
+        }
+
+        .month-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .day-headers {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .day-button {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            font-size: 0.9em;
+            color: #666;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .day-button.today {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+
+        .day-button:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Header Section */
+        .header {
+            position: fixed;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            width: 100%;
+            background-color: white;
+            margin-top: 5px;
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+
+        .back-button img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .text {
+            color: rgb(64, 64, 64);
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .next-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0747A9;
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .next-button img {
+            width: 25px;
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div class="header">
+        <a href="{{ url_for('dropoff') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back">
+        </a>
+        <h2 class="text">When are you going?</h2>
+    </div>
+
+    <br><br>
+    
+    <form method="POST" id="publish-form">
+        <div class="calendar-container" id="calendarContainer">
+        </div>
+        <input type="hidden" name="ridedate" id="ridedate">
+
+        <!-- <button class="next-button" type="submit">
+            <img src="{{ url_for('static', filename='images/forward.png') }}" alt="Next">
+        </button> -->
+    </form>
+
+    <script>
+        const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        const today = new Date();
+        const todayDate = today.getDate();
+        const todayMonth = today.getMonth();
+        const todayYear = today.getFullYear();
+
+        const calendarContainer = document.getElementById("calendarContainer");
+
+        for (let month = 0; month < 12; month++) {
+            const monthSection = document.createElement("div");
+            monthSection.classList.add("month-section");
+
+            const monthTitle = document.createElement("div");
+            monthTitle.classList.add("month-title");
+            monthTitle.textContent = `${monthNames[month]} ${todayYear}`;
+            monthSection.appendChild(monthTitle);
+
+            const dayHeaders = document.createElement("div");
+            dayHeaders.classList.add("day-headers");
+            daysOfWeek.forEach(day => {
+                const dayHeader = document.createElement("div");
+                dayHeader.textContent = day;
+                dayHeaders.appendChild(dayHeader);
+            });
+            monthSection.appendChild(dayHeaders);
+
+            const daysGrid = document.createElement("div");
+            daysGrid.classList.add("days-grid");
+
+            const firstDay = new Date(todayYear, month, 1).getDay();
+            const daysInMonth = new Date(todayYear, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement("div");
+                daysGrid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayButton = document.createElement("button");
+                dayButton.textContent = day;
+                dayButton.classList.add("day-button");
+
+                if (day === todayDate && month === todayMonth) {
+                    dayButton.classList.add("today");
+                }
+
+                dayButton.onclick = () => {
+                    const selectedDate = `${day} ${monthNames[month]} ${todayYear}`;
+                    document.getElementById("ridedate").value = selectedDate;
+                };
+
+                daysGrid.appendChild(dayButton);
+            }
+
+            monthSection.appendChild(daysGrid);
+            calendarContainer.appendChild(monthSection);
+        }
+    </script>
+</body>
+</html>

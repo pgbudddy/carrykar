@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pick-up Location</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Container for input */
+        .container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* border: 1px solid black; */
+        }
+
+        .container h1{
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 80px;
+        }
+
+        .condition{
+            font-family: 'Poppins', sans-serif;
+            text-align: left;
+            font-size: 15px;
+            margin-top: 30px;
+            width: 95%;
+        }
+
+        .back-button {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <!-- Input Section -->
+    <div class="container">
+
+        <a href="{{ url_for('profile') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back" style="width: 30px; height: 30px;">
+        </a>
+
+        <h1>CARRYKAR REFUND POLICY</h1>
+
+        <center>
+        <p class="condition">
+            At CarryKar, we prioritize customer satisfaction. Refunds are applicable under the following circumstances:<br><br>
+            <strong>1.</strong>	Cancellations by the Traveler or Sender:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o	If the traveller cancels the trip after accepting the parcel, a full refund will be provided.<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o	If the sender cancels before the trip begins, a refund will be issued minus any applicable fees.<br><br>
+            <strong>2.</strong>	Lost or Damaged Parcels:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o	In case of loss or damage, claims must be reported within 24 hours of delivery failure. Compensation will be subject to CarryKar's evaluation.<br><br>
+            <strong>3.</strong>	Service Fee:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o	Non-refundable in most cases, except when CarryKar deems the issue valid for a full refund.<br><br>
+            <strong>4.</strong>	Refund Processing:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;o	Approved refunds will be processed within 7–10 business days.<br><br>
+            For more details, contact our support team at <strong>support@carrykar.co.in</strong>
+        </p>
+        </center>
+
+
+    </div>
+
+
+
+
+    </body>
+</html>
+
+
+<script>
+
+
+</script>

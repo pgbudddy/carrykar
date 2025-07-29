@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="Group_21"
+   data-name="Group 21"
+   width="25.014"
+   height="25.014"
+   viewBox="0 0 25.014 25.014"
+   version="1.1"
+   sodipodi:docname="support.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="11.731403"
+     inkscape:cx="35.843965"
+     inkscape:cy="15.897502"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="Group_20" />
+  <g
+     id="Group_20"
+     data-name="Group 20">
+    <path
+       id="Path_354"
+       data-name="Path 354"
+       d="M5.863,9.918H3.932A8.6,8.6,0,0,1,20.574,7.57a.977.977,0,0,0,1.833-.678A10.554,10.554,0,0,0,1.956,10.443,3.91,3.91,0,0,0,0,13.826v3.322a3.913,3.913,0,0,0,3.908,3.908H5.863a.977.977,0,0,0,.977-.977V10.895A.977.977,0,0,0,5.863,9.918ZM4.885,19.1H3.908a1.956,1.956,0,0,1-1.954-1.954V13.826a1.956,1.956,0,0,1,1.954-1.954h.977Z"
+       fill="#ff3414"
+       style="fill:#1f53a5;fill-opacity:1" />
+    <path
+       id="Path_355"
+       data-name="Path 355"
+       d="M226.553,203H224.6a.977.977,0,0,0-.977.977v10.211a.978.978,0,0,1-.977.977h-2.98v.031a1.954,1.954,0,1,0,0,1.892v.031h2.98a2.935,2.935,0,0,0,2.931-2.931v-.049h.977a3.913,3.913,0,0,0,3.908-3.908v-3.322A3.913,3.913,0,0,0,226.553,203Zm1.954,7.231a1.956,1.956,0,0,1-1.954,1.954h-.977v-7.231h.977a1.956,1.956,0,0,1,1.954,1.954Z"
+       transform="translate(-205.447 -193.082)"
+       fill="#ff3414"
+       style="fill:#1f53a5;fill-opacity:1" />
+  </g>
+</svg>

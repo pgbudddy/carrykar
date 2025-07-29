@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pick-up Location</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Container for input */
+        .container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* border: 1px solid black; */
+        }
+
+        .container h1{
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 80px;
+        }
+
+        .condition{
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            font-size: 15px;
+            margin-top: 30px;
+            width: 95%;
+        }
+
+        .back-button {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <!-- Input Section -->
+    <div class="container">
+
+        <a href="{{ url_for('profile') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back" style="width: 30px; height: 30px;">
+        </a>
+
+        <h1>CARRYKAR Privacy Policy</h1>
+
+        <center>
+        <p class="condition">
+            Privacy Policy for Carrykar Travel and Logistics Private Limited
+            Effective Date: 14th December 2024
+            ________________________________________
+            At Carrykar Travel and Logistics Private Limited, we are committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our platform.
+            ________________________________________
+            1. Information We Collect
+            We may collect the following types of information:
+            •	Personal Information: Name, email address, phone number, payment information, and any other details you provide during registration or while using our services.
+            •	Transaction Information: Details of any parcels you send or carry, including location, destination, value, and associated transaction data.
+            •	Usage Data: Information about how you use our platform, such as device type, browser type, IP address, and location data.
+            ________________________________________
+            2. How We Use Your Information
+            We use your information for the following purposes:
+            •	To provide our services, including connecting Senders and Carriers.
+            •	To process payments and manage transactions.
+            •	To communicate with you regarding updates, orders, and customer support.
+            •	To improve our platform and services based on your usage data.
+            •	To comply with legal requirements and protect our rights.
+            ________________________________________
+            3. Data Sharing
+            We do not sell or rent your personal information. We may share your information in the following cases:
+            •	Service Providers: We may share your data with trusted third-party service providers who assist with platform operation (e.g., payment processors).
+            •	Legal Compliance: We may disclose your information if required by law or to protect our legal rights.
+            ________________________________________
+            4. Cookies and Tracking Technologies
+            We use cookies and similar technologies to improve your experience on our platform. These tools help us track your usage, analyse performance, and personalize content. You can control cookie settings in your browser.
+            ________________________________________
+            5. Data Security
+            We implement reasonable security measures to protect your personal information. However, no method of electronic transmission or storage is 100% secure, and we cannot guarantee the absolute security of your data.
+            ________________________________________
+            6. Your Rights
+            •	Access and Correction: You can access and update your personal information.
+            •	Data Deletion: You can request the deletion of your personal information, subject to legal obligations.
+            •	Opt-out: You can opt out of receiving promotional communications from us by following the unsubscribe instructions.
+            ________________________________________
+            7. Retention of Data
+            We retain your personal information only as long as necessary to fulfil the purposes outlined in this Privacy Policy or as required by law.
+            ________________________________________
+            8. Children's Privacy
+            Our platform is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from children. If we learn that we have collected such information, we will take steps to delete it.
+            ________________________________________
+            9. International Transfers
+            If you are located outside of India, your information may be transferred and processed in India. By using our services, you consent to this transfer.
+            ________________________________________
+            10. Changes to This Privacy Policy
+            Carrykar reserves the right to update or modify this Privacy Policy at any time. Any changes will be posted on the platform, and the revised policy will take effect immediately.
+            ________________________________________
+            11. Contact Information
+            For any questions or concerns about this Privacy Policy, please contact us at:
+            Email: privacy@carrykar.co.in
+            Phone: +91 9266344807
+            Address: 182GF, Block C1, BPTP Astaire Garden, Sector 70A, Gurgaon, HR 122101            
+        </p>
+        </center>
+
+
+    </div>
+
+
+
+
+    </body>
+</html>
+
+
+<script>
+
+
+</script>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset for padding and margins */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* Style for the main container */
+        .container {
+            width: 100%;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+        }
+        .text {
+            position: absolute;
+            left: 40px;
+            top: 90px;
+            width: 80%;
+            color: rgb(64, 64, 64);
+        }
+        .container input {
+            font-size: 15px;
+            font-weight: bold;
+            width: 90%;
+            margin-top: 200px;
+            height: 50px;
+            align-self: center;
+            background-color: lightgray;
+            border: 0px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .next-button {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+        }
+        
+        /* Counter container styling */
+        .counter-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px; /* Space between the elements */
+            margin-top: 260px;
+        }
+
+        .counter-minus, .counter-plus {
+            font-size: 25px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #0747A9;
+            border-radius: 50px;
+            color: #0747A9;
+            background-color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .counter-display {
+            font-size: 24px;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Fullscreen Loader Styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .car {
+            width: 102px;
+            height: 40px;
+        }
+
+        .car__body {
+            animation: shake 0.2s ease-in-out infinite alternate;
+        }
+
+        .car__line {
+            transform-origin: center right;
+            stroke-dasharray: 22;
+            animation: line 0.8s ease-in-out infinite;
+            animation-fill-mode: both;
+        }
+
+        .car__line--top {
+            animation-delay: 0s;
+        }
+
+        .car__line--middle {
+            animation-delay: 0.2s;
+        }
+
+        .car__line--bottom {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateY(-1%);
+            }
+            100% {
+                transform: translateY(3%);
+            }
+        }
+
+        @keyframes line {
+            0% {
+                stroke-dashoffset: 22;
+            }
+            25% {
+                stroke-dashoffset: 22;
+            }
+            50% {
+                stroke-dashoffset: 0;
+            }
+            51% {
+                stroke-dashoffset: 0;
+            }
+            80% {
+                stroke-dashoffset: -22;
+            }
+            100% {
+                stroke-dashoffset: -22;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- Loader Overlay -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader">
+            <svg class="car" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(2 1)" stroke="#002742" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+                    <path class="car__body" d="M47.293 2.375C52.927.792 54.017.805 54.017.805c2.613-.445 6.838-.337 9.42.237l8.381 1.863c2.59.576 6.164 2.606 7.98 4.531l6.348 6.732 6.245 1.877c3.098.508 5.609 3.431 5.609 6.507v4.206c0 .29-2.536 4.189-5.687 4.189H36.808c-2.655 0-4.34-2.1-3.688-4.67 0 0 3.71-19.944 14.173-23.902zM36.5 15.5h54.01" stroke-width="3" />
+                    <ellipse class="car__wheel--left" stroke-width="3.2" fill="#FFF" cx="83.493" cy="30.25" rx="6.922" ry="6.808" />
+                    <ellipse class="car__wheel--right" stroke-width="3.2" fill="#FFF" cx="46.511" cy="30.25" rx="6.922" ry="6.808" />
+                    <path class="car__line car__line--top" d="M22.5 16.5H2.475" stroke-width="3" />
+                    <path class="car__line car__line--middle" d="M20.5 23.5H.4755" stroke-width="3" />
+                    <path class="car__line car__line--bottom" d="M25.5 9.5h-19" stroke-width="3" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('what_time') }}" class="back-button" style="-webkit-tap-highlight-color: transparent;">
+            <img src="{{ url_for('static', filename='images/back.png') }}" alt="Back" style="width: 30px; height: 30px;">
+        </a>
+
+        <h2 class="text" style="font-family: 'Poppins', sans-serif; font-weight: bold;">So how many passengers can you take?</h2>
+            <!-- Counter container for horizontal alignment -->
+            <div class="counter-container">
+                <button class="counter-minus" style="-webkit-tap-highlight-color: transparent;">-</button>
+                <h1 class="counter-display">(..)</h1>
+                <button class="counter-plus" style="-webkit-tap-highlight-color: transparent;">+</button>
+            </div>
+
+        <form method="POST" id="passengers-form">
+
+            <input type="text" name="passengers" id="passengers" style="position: absolute; left: -9999px; top: -9999px;">
+
+            <button class="next-button" type="submit" style="-webkit-tap-highlight-color: transparent; background-color: #0747A9; border-radius: 50px; border: 0px; height: 55px; width: 55px;">
+                <img src="{{ url_for('static', filename='images/forward.png') }}" alt="Next" style="width: 30px; height: 30px; position: absolute; left: 50%; top: 50%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);">
+            </button>
+
+        </form>
+
+    </div>
+
+    <script>
+        let counterDisplayElem = document.querySelector('.counter-display');
+        let counterMinusElem = document.querySelector('.counter-minus');
+        let counterPlusElem = document.querySelector('.counter-plus');
+
+        let count = 0;
+
+        updateDisplay();
+
+        counterPlusElem.addEventListener("click", () => {
+            count++;
+            updateDisplay();
+        });
+
+        counterMinusElem.addEventListener("click", () => {
+            count--;
+            updateDisplay();
+        });
+
+        function updateDisplay() {
+            counterDisplayElem.textContent = count;
+            
+            document.getElementById("passengers").value = counterDisplayElem.textContent;
+        }
+    </script>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const loaderOverlay = document.getElementById('loader-overlay');
+        const content = document.getElementById('content');
+        const form = document.getElementById('passengers-form');
+
+        // Hide loader and show content when the page loads
+        window.onload = () => {
+            loaderOverlay.style.display = 'none';
+            content.style.display = 'block';
+        };
+
+        // Show loader when the form is submitted
+        form.addEventListener('submit', (e) => {
+            loaderOverlay.style.display = 'flex'; // Show loader
+            content.style.display = 'none'; // Hide content
+            // Form submission will proceed naturally
+        });
+    });
+</script>
+</body>
+</html>

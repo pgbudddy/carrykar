@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16" id="Calender">
+  <defs>
+    <linearGradient xlink:href="#a" id="d" x1="-869" x2="-858" y1="967.112" y2="967.112" gradientTransform="translate(871 74)" gradientUnits="userSpaceOnUse"></linearGradient>
+    <linearGradient id="a">
+      <stop offset="0" stop-color="#929292" class="stopColorfc6a28 svgShape"></stop>
+      <stop offset="1" stop-color="#9c9c9c" class="stopColorf94045 svgShape"></stop>
+    </linearGradient>
+    <linearGradient xlink:href="#b" id="e" x1="-869" x2="-858" y1="-64" y2="-64" gradientTransform="translate(871 1110.362)" gradientUnits="userSpaceOnUse"></linearGradient>
+    <linearGradient id="b">
+      <stop offset="0" stop-color="#f3f3f3" class="stopColorf3f3f3 svgShape"></stop>
+      <stop offset="1" stop-color="#e1e1e1" class="stopColordfe3e4 svgShape"></stop>
+    </linearGradient>
+    <linearGradient xlink:href="#c" id="f" x1="-867" x2="-866" y1="969.862" y2="969.862" gradientTransform="translate(871 74)" gradientUnits="userSpaceOnUse"></linearGradient>
+    <linearGradient id="c">
+      <stop offset="0" stop-color="#b2b2b2" class="stopColora5b7bf svgShape"></stop>
+      <stop offset="1" stop-color="#b2b2b2" class="stopColora5b7bf svgShape"></stop>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 -1036.362)" fill="#000000" class="color000000 svgShape">
+    <path fill="url(#d)" d="M3 1039.362h9c.554 0 1 .446 1 1v2.5H2v-2.5c0-.554.446-1 1-1z" color="#000" overflow="visible" style="marker:none"></path>
+    <path fill="url(#e)" d="M2 1042.362v7c0 .554.446 1 1 1h9c.554 0 1-.446 1-1v-7H2z"></path>
+    <rect width="1" height="3" x="4" y="1038.362" fill="#484848" color="#000" overflow="visible" rx=".5" ry=".5" style="marker:none" class="color34485c svgShape"></rect>
+    <rect width="1" height="3" x="10" y="1038.362" fill="#484848" color="#000" overflow="visible" rx=".5" ry=".5" style="marker:none" class="color34485c svgShape"></rect>
+    <rect width="1" height="1" x="10" y="1043.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="8" y="1043.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="6" y="1043.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="4" y="1043.362" fill="url(#f)" color="#000" overflow="visible" ry="0" style="marker:none"></rect>
+    <rect width="1" height="1" x="10" y="1045.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="8" y="1045.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="6" y="1045.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="4" y="1045.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="8" y="1047.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="6" y="1047.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+    <rect width="1" height="1" x="4" y="1047.362" fill="#959595" color="#000" overflow="visible" ry="0" style="marker:none" class="colora5b7bf svgShape"></rect>
+  </g>
+</svg>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="https:_www.flaticon.com_free-icon_verified_907830_term_check_page_1_position_15"
+   data-name="https://www.flaticon.com/free-icon/verified_907830#term=check&amp;page=1&amp;position=15"
+   width="16.075"
+   height="16.075"
+   viewBox="0 0 16.075 16.075"
+   version="1.1"
+   sodipodi:docname="check.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs11" />
+  <sodipodi:namedview
+     id="namedview9"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="18.255011"
+     inkscape:cx="2.10901"
+     inkscape:cy="8.0251938"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="https:_www.flaticon.com_free-icon_verified_907830_term_check_page_1_position_15" />
+  <g
+     id="g901">
+    <g
+       id="Group_22"
+       data-name="Group 22"
+       transform="translate(0 0)">
+      <g
+         id="Group_21"
+         data-name="Group 21">
+        <path
+           id="Path_42"
+           data-name="Path 42"
+           d="M13.721,2.354A8.037,8.037,0,0,0,2.354,13.721,8.037,8.037,0,1,0,13.721,2.354ZM8.037,15.133a7.1,7.1,0,1,1,7.1-7.1A7.1,7.1,0,0,1,8.037,15.133Z"
+           transform="translate(0 0)"
+           fill="#ff3414"
+           style="fill:#1f53a5;fill-opacity:1" />
+      </g>
+    </g>
+    <g
+       id="Group_24"
+       data-name="Group 24"
+       transform="translate(4.06 5.321)">
+      <g
+         id="Group_23"
+         data-name="Group 23">
+        <path
+           id="Path_43"
+           data-name="Path 43"
+           d="M137.118,169.605a.471.471,0,0,0-.666,0l-4.159,4.159-2.189-2.189a.471.471,0,1,0-.666.666l2.522,2.522a.471.471,0,0,0,.666,0l4.492-4.492A.471.471,0,0,0,137.118,169.605Z"
+           transform="translate(-129.301 -169.467)"
+           fill="#ff3414"
+           style="fill:#1f53a5;fill-opacity:1" />
+      </g>
+    </g>
+  </g>
+</svg>
