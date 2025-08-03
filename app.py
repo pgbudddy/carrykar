@@ -36,8 +36,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 from flask_socketio import SocketIO, emit
+from concurrent.futures import ThreadPoolExecutor
+from threading import Thread
+from io import BytesIO
 
-app = Flask(__name__)
+
+app = Flask(__name__, static_folder='static')
 app.secret_key = 'your_secret_key'  # Ensure you use a secure key for session
 app.config['SESSION_PERMANENT'] = True  # Make session persistent
 app.config['SESSION_TYPE'] = 'filesystem'  # Store session on server
@@ -68,7 +72,7 @@ UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
+executor = ThreadPoolExecutor()
 
 
 # @app.route('/')
@@ -84,27 +88,29 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/register_token", methods=['GET', 'POST'])
 def register_token():
     if request.method == "GET":
-        token = request.args.get("token")  # Get token from URL
-        public_ip = request.remote_addr  # Get client's IP from request
+        token = request.args.get("token")  # From URL
+        public_ip = request.remote_addr     # From request header
     else:
         data = request.json
         token = data.get("token")
-        public_ip = data.get("public_ip")  # Public IP sent by Android
+        public_ip = data.get("public_ip")
 
+    # Save in session (optional use)
     session['token'] = token
     session['public_ip'] = public_ip
 
     print("Stored Token in Session:", session.get("token"))
     print("Stored Public IP:", session.get("public_ip"))
 
-    print("updatetoken: ", api.updatetoken("None", token, public_ip))
+    # 🔁 Run update in background to reduce latency
+    executor.submit(api.updatetoken, "None", token, public_ip)
 
-    #return redirect(url_for('home'))
     return jsonify({
         "message": "Token stored successfully",
         "token": token,
         "public_ip": public_ip
-    })  # ✅ No Redirect (JSON Response)
+    })
+
 
 
 @app.route('/')
@@ -128,52 +134,82 @@ def chat():
 messages = []
 @socketio.on("send_message")
 def handle_message(data):
-    username = data.get("username", "Anonymous")
-    user = request.cookies.get('username')  # Fetch the 'user' cookie
-    print("user ", user)
-    checkenumber = api.fetch_profile(user)
-
-    print("checkenumber ", checkenumber)
-    username = checkenumber[0][0]+" "+checkenumber[0][1]
-    print("name ", username)
-
-    message = data.get("message", "")
+    raw_username = data.get("username", "Anonymous")
+    user_cookie = request.cookies.get('username')  # Get user from cookie
+    message = data.get("message", "").strip()
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    if message.strip():
+
+    def get_full_name():
+        try:
+            profile = api.fetch_profile(user_cookie)
+            if profile and len(profile[0]) >= 2:
+                return f"{profile[0][0]} {profile[0][1]}"
+        except Exception as e:
+            print("[⚠️] Error fetching profile:", e)
+        return raw_username
+
+    # 🧠 Fetch name in background thread
+    future_name = executor.submit(get_full_name)
+    username = future_name.result()
+
+    if message:
         messages.append((username, message, timestamp))
-        socketio.emit("receive_message", (username, message, timestamp), to=None)  # Broadcast to all
-        insert = api.save_message(username, message, timestamp)
+
+        # 🚀 Immediately broadcast to all connected clients
+        socketio.emit("receive_message", (username, message, timestamp))
+
+        # 💾 Save message in background
+        def save_message_background():
+            try:
+                result = api.save_message(username, message, timestamp)
+                print("[💾] Message saved:", result)
+            except Exception as e:
+                print("[❌] Failed to save message:", e)
+
+        executor.submit(save_message_background)
         
 
 @socketio.on("connect")
 def handle_connect():
-    messages= api.get_recent_messages()
+    sid = request.sid  # Unique socket session ID
+    print(f"[🔗] Client connected: {sid}")
 
-    print("messages ", messages)
-    socketio.emit("load_messages", messages)
+    def fetch_and_send():
+        try:
+            messages = api.get_recent_messages()
+            print("[🧾] Recent messages:", messages)
+            socketio.emit("load_messages", messages, to=sid)  # Send only to the connecting client
+        except Exception as e:
+            print("[❌] Error fetching messages:", e)
+
+    # Fetch and emit messages in the background
+    executor.submit(fetch_and_send)
 
 
 # @cache.cached(timeout=60 * 60 * 24 * 7)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    username = request.cookies.get('username')
-    # print(username)
-    # if username:
-    #     session['username'] = username
+    username_cookie = request.cookies.get('username')
+
+    # Optional: auto-login from cookie
+    # if username_cookie:
+    #     session['username'] = username_cookie
     #     return redirect(url_for('main'))
 
     if request.method == 'POST':
         username = request.form['number']
         password = request.form['password']
 
-        print(username, password)
+        print(f"[🔐] Login attempt: {username}")
 
-        checklogin = api.login(username, password)
-        print(checklogin)
+        # 🧠 Validate login in a thread
+        future_login = executor.submit(api.login, username, password)
+        checklogin = future_login.result()
+
+        print(f"[✅] Login result: {checklogin}")
 
         if checklogin:
-            session.clear()  # Clear previous session data
+            session.clear()
             session['username'] = username
             expire_date = datetime.datetime.now() + datetime.timedelta(days=30)
             resp = make_response(redirect(url_for('main')))
@@ -190,22 +226,23 @@ def login():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        email = request.form['email']
-        print(email)
+        email = request.form['email'].strip()
+        print(f"[📨] Signup email entered: {email}")
 
-        checkemail = api.checkemail(email)
+        # ✅ Run email check in a background thread
+        future_check = executor.submit(api.checkemail, email)
+        checkemail = future_check.result()
 
-        print(checkemail)
+        print(f"[✔️] Email availability: {checkemail}")
 
         if checkemail == False:
             error = "This email address is already being used by another account!"
             return render_template('signup.html', error=error)
-        else:
-            pass
 
-        # Store the email in session to carry it to the next page
+        # Store email for next step
         session['email'] = email
         return redirect(url_for('signup_name'))
+    
     return render_template('signup.html')
 
 
@@ -254,36 +291,36 @@ def signup_password():
 @app.route('/signup_mobile', methods=['GET', 'POST'])
 def signup_mobile():
     if request.method == 'POST':
-        mobilenumber = request.form['mobilenumber']
-        print("mobilenumber ", mobilenumber)
+        mobilenumber = request.form['mobilenumber'].strip()
+        print("📱 Mobile number received:", mobilenumber)
 
-        checkenumber = api.fetch_profile(mobilenumber)
+        # 🔁 Fetch profile in a background thread
+        future_check = executor.submit(api.fetch_profile, mobilenumber)
+        checkenumber = future_check.result()
 
-        print(checkenumber)
+        print("🔍 fetch_profile result:", checkenumber)
 
-        if checkenumber != []:
+        if checkenumber:
             return jsonify({'error': 'Mobile number already in use'}), 400
-            
-        else:
-            print(mobilenumber)
 
-            # email = session.get('email')
-            # email = "kirtip2673@gmail.com"
-            email = session.get('email')
+        # ✅ Mobile number is new
+        email = session.get('email')
+        generateotp = random.randint(1000, 9999)
+        print("🔐 Generated OTP:", generateotp)
 
-            generateotp = random.randint(1000, 9999)
-            print("Generated OTP:", generateotp)
+        # 🔁 Send OTP in a background thread (but we wait for result)
+        future_send = executor.submit(api.send_mail, email, generateotp)
+        sendotp = future_send.result()
 
-            sendotp = api.send_mail(email, generateotp)
+        if not sendotp:
+            return "Failed to send OTP."
 
-            if not sendotp:
-                return "Failed to send OTP."
+        # ✅ Store in session
+        session['mobilenumber'] = mobilenumber
+        session['otp'] = generateotp
+        print("🚀 Redirecting to OTP input page...")
 
-            # Store the name in session to carry it to the next page
-            session['mobilenumber'] = mobilenumber
-            session['otp'] = generateotp
-            print("redirecting to")
-            return jsonify({'success': True, 'redirect_url': url_for('signup_mobile_code')})
+        return jsonify({'success': True, 'redirect_url': url_for('signup_mobile_code')})
 
     return render_template('signup_mobile.html')
 
@@ -295,7 +332,7 @@ def signup_mobile_code():
         public_ip = request.form.get('public_ip', "Unknown")  # Get IP from form data
 
         sessionotp = session.get('otp')
-        
+
         session['public_ip'] = public_ip
 
         print("Session OTP:", sessionotp)
@@ -341,8 +378,6 @@ def signup_done():
         return True
     else:
         return False
-    
-    # return render_template('signup_mobile_code.html')
 
 
 @app.route('/main', methods=['GET', 'POST'])
@@ -518,82 +553,74 @@ def going():
     return render_template('going.html')
 
 
-
 @app.route('/search_ride')
 def search_ride():
-    # Retrieve session data
+    # Get session values
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
     ridepickuplocation = session.get('ridepickuplocation', '')
     ridedroplocation = session.get('ridedroplocation', '')
     calendar_date = session.get('calendar_date', '')
     person_count = session.get('person_count', '')
+    ridepickupcoordinates = session.get('ridepickupcoordinates', '')
+    ridedropcoordinates = session.get('ridedropcoordinates', '')
 
-    ridepickupcoordinates = session.get('ridepickupcoordinates')
-    print("ridepickupcoordinates ", ridepickupcoordinates)
     ridepickupcoordinate_list = ridepickupcoordinates.split(",")
-    ridedropcoordinates = session.get('ridedropcoordinates')
     ridedropcoordinate_list = ridedropcoordinates.split(",")
 
-    print("ridepickuplocation ", ridepickuplocation)    
-    print("ridedroplocation ", ridedroplocation)
-    print("ridepickupcoordinates ", ridepickupcoordinates)    
-    print("ridedropcoordinates ", ridedropcoordinates)
-    print("calendar_date ", calendar_date)
-    print("person_count ", person_count)
+    print("🚗 Coordinates:", ridepickupcoordinate_list, ridedropcoordinate_list)
 
-    ridepickupcity = api.find_city(GOOGLE_MAPS_API_KEY, ridepickupcoordinate_list[0], ridepickupcoordinate_list[1])
-    ridedropcity = api.find_city(GOOGLE_MAPS_API_KEY, ridedropcoordinate_list[0], ridedropcoordinate_list[1])
+    # Run both city lookups in parallel
+    future_pickup_city = executor.submit(api.find_city, GOOGLE_MAPS_API_KEY, ridepickupcoordinate_list[0], ridepickupcoordinate_list[1])
+    future_drop_city = executor.submit(api.find_city, GOOGLE_MAPS_API_KEY, ridedropcoordinate_list[0], ridedropcoordinate_list[1])
     
-    print("ridepickupcity ", ridepickupcity)
-    print("ridedropcity ", ridedropcity)
+    ridepickupcity = future_pickup_city.result()
+    ridedropcity = future_drop_city.result()
 
-    findride = api.find_ride(ridepickupcity, ridedropcity, calendar_date)
-    print("findride ", findride)
-    if findride != False:
-        name = api.find_host_user(findride[0][15])
+    print("🌆 Cities:", ridepickupcity, ridedropcity)
 
-        print("name ", name)
+    # Run find_ride in background
+    future_rides = executor.submit(api.find_ride, ridepickupcity, ridedropcity, calendar_date)
+    findride = future_rides.result()
+    print("🎯 Found rides:", findride)
 
-        keys = [
-        "start_location", "start_coordinated", "pickupcity", "end_location", "end_coordinated", "dropcity", "date", "start_time", "end_time", "passengers", "passengerprice", "kgcount", "kgprice", "ride_type", "details", "userid", "uniqueid", "datetime", "ridepickuplocation", "ridedroplocation"
-        ]
-
-        rides = [dict(zip(keys, entry[:len(keys)])) for entry in findride]
-
-        print("findride arrays ",rides)
-        print("name ", name[0])
-
-        gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-
-        for ride in rides:
-            start_coords = ride["start_coordinated"]
-            end_coords = ride["end_coordinated"]
-            
-            # Use Google Maps Distance Matrix API
-            try:
-                result = gmaps.distance_matrix(
-                    origins=start_coords,
-                    destinations=end_coords,
-                    mode="driving",  # Options: driving, walking, bicycling, transit
-                    units="metric"
-                )
-                distance = result["rows"][0]["elements"][0]["distance"]["text"]
-                duration = result["rows"][0]["elements"][0]["duration"]["text"]
-
-                # Add distance and duration to the ride dictionary
-                ride["distance"] = distance
-                ride["duration"] = duration
-
-            except Exception as e:
-                print(f"Error fetching data for ride {ride['uniqueid']}: {e}")
-                ride["distance"] = "N/A"
-                ride["duration"] = "N/A"
-
-        # print("Updated rides with distance and duration:", rides)
-
-        return render_template('search_ride.html', rides=rides, name=name[0], calendar_date=calendar_date)
-
-    else:
+    if not findride:
         return render_template('search_ride.html')
+
+    # Run host name lookup in background
+    future_host = executor.submit(api.find_host_user, findride[0][15])
+    name = future_host.result()
+    print("👤 Host name:", name)
+
+    keys = [
+        "start_location", "start_coordinated", "pickupcity", "end_location", "end_coordinated", "dropcity", "date",
+        "start_time", "end_time", "passengers", "passengerprice", "kgcount", "kgprice", "ride_type", "details",
+        "userid", "uniqueid", "datetime", "ridepickuplocation", "ridedroplocation"
+    ]
+
+    rides = [dict(zip(keys, entry[:len(keys)])) for entry in findride]
+
+    # 🔁 Add distance + duration in background (optional per-ride threading)
+    def enrich_ride_with_distance(ride):
+        try:
+            result = gmaps.distance_matrix(
+                origins=ride["start_coordinated"],
+                destinations=ride["end_coordinated"],
+                mode="driving",
+                units="metric"
+            )
+            ride["distance"] = result["rows"][0]["elements"][0]["distance"]["text"]
+            ride["duration"] = result["rows"][0]["elements"][0]["duration"]["text"]
+        except Exception as e:
+            print(f"[❌] Distance error for {ride['uniqueid']}: {e}")
+            ride["distance"] = "N/A"
+            ride["duration"] = "N/A"
+
+    # Run all distance lookups in parallel
+    futures = [executor.submit(enrich_ride_with_distance, ride) for ride in rides]
+    for f in futures:
+        f.result()
+
+    return render_template('search_ride.html', rides=rides, name=name[0], calendar_date=calendar_date)
 
 
 @app.route('/pickup', methods=['GET', 'POST'])
@@ -601,16 +628,14 @@ def pickup():
     return render_template('pickup.html')
 
 
-
 @app.route('/submit-ride', methods=['POST'])
 def submit_ride():
-    # Get data from the request
     data = request.get_json()
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
-    # Extract values from the JSON data
     start_location = data.get('startLocation')
     end_location = data.get('endLocation')
-    ride_date_time = data.get('rideDateTime')  # Expected format: 'YYYY-MM-DDTHH:MM'
+    ride_date_time = data.get('rideDateTime')  # Format: 'YYYY-MM-DDTHH:MM'
     ride_type = data.get('rideType')
     passenger_count = data.get('passengerCount')
     passenger_price = data.get('passengerPrice')
@@ -618,161 +643,108 @@ def submit_ride():
     weight_price = data.get('weightPrice')
     ride_comments = data.get('rideComments')
 
-    print("start_location ", start_location)
-    print("end_location ", end_location)
-    print("ride_date_time ", ride_date_time)
-    print("ride_type ", ride_type)
-    print("passenger_count ", passenger_count)
-    print("passenger_price ", passenger_price)
-    print("weight_capacity ", weight_capacity)
-    print("weight_price ", weight_price)
-    print("ride_comments ", ride_comments)
+    user = request.cookies.get('username')
 
-    datetime_obj = datetime.datetime.strptime(ride_date_time, "%Y-%m-%dT%H:%M")
-
-    new_datetime_obj = datetime_obj + datetime.timedelta(minutes=13)
-
-    # Convert to the desired format
-    formatted_startdate = new_datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
-    StartTime = new_datetime_obj.strftime("%I:%M %p")  # Fetch only time in AM/PM format
-
-    # Output results
-    print("Formatted DateTime:", formatted_startdate)
-    print("Time in AM/PM:", StartTime)
-
-    # Google Maps API client setup
-    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-
-    # Fetch coordinates for the start location
-    if start_location:
-        geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={start_location}&key={GOOGLE_MAPS_API_KEY}"
-        response = requests.get(geocode_url)
-        geocode_data = response.json()
-
-        if geocode_data['status'] == 'OK':
-            coordinates = geocode_data['results'][0]['geometry']['location']
-            start_latitude = coordinates['lat']
-            start_longitude = coordinates['lng']
-            session['pickupcoordinates'] = f"{start_latitude},{start_longitude}"
-        else:
-            return jsonify({'message': 'Failed to fetch start location coordinates', 'status': geocode_data['status']}), 400
-
-    # Fetch coordinates for the end location
-    if end_location:
-        geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={end_location}&key={GOOGLE_MAPS_API_KEY}"
-        response = requests.get(geocode_url)
-        geocode_data = response.json()
-
-        if geocode_data['status'] == 'OK':
-            coordinates = geocode_data['results'][0]['geometry']['location']
-            end_latitude = coordinates['lat']
-            end_longitude = coordinates['lng']
-            session['dropcoordinates'] = f"{end_latitude},{end_longitude}"
-        else:
-            return jsonify({'message': 'Failed to fetch end location coordinates', 'status': geocode_data['status']}), 400
-
-    # Calculate distance and estimated time using Google Maps Distance Matrix API
-    if start_latitude and start_longitude and end_latitude and end_longitude:
-        # Request distance and time data
-        result = gmaps.distance_matrix(
-            origins=(start_latitude, start_longitude),
-            destinations=(end_latitude, end_longitude),
-            mode="driving",  # You can change this to "walking", "transit", etc.
-            departure_time = datetime.datetime.now()  # Can be set to a specific time if needed
-        )
-
-        # Extract the distance and duration
-        if result['status'] == 'OK':
-            distance = result['rows'][0]['elements'][0]['distance']['text']
-            duration_text = result['rows'][0]['elements'][0]['duration']['text']
-            session['ride_distance'] = distance
-            session['ride_duration'] = duration_text
-
-            print("Distance: ", distance)
-            print("Duration: ", duration_text)
-        else:
-            return jsonify({'message': 'Failed to calculate distance and duration', 'status': result['status']}), 400
-
-    # Convert ride_date_time string (with 'T') to a datetime object
+    # 🧠 Parse ride datetime
     try:
-        ride_date_time_obj = datetime.datetime.strptime(ride_date_time, '%Y-%m-%dT%H:%M')
+        ride_datetime = datetime.datetime.strptime(ride_date_time, "%Y-%m-%dT%H:%M")
     except ValueError:
-        return jsonify({'message': 'Invalid ride_date_time format. Expected format: YYYY-MM-DDTHH:MM'}), 400
+        return jsonify({'message': 'Invalid rideDateTime format'}), 400
 
-    # Extract the duration from the duration text (e.g., "15 mins" or "1 hour 20 mins")
+    # Add buffer and get formatted values
+    datetime_with_buffer = ride_datetime + datetime.timedelta(minutes=13)
+    formatted_startdate = datetime_with_buffer.strftime("%Y-%m-%d %H:%M:%S")
+    StartTime = datetime_with_buffer.strftime("%I:%M %p")
+
+    # 🧠 Geocode both locations in parallel
+    def geocode_address(address):
+        geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={GOOGLE_MAPS_API_KEY}"
+        response = requests.get(geocode_url)
+        result = response.json()
+        if result['status'] == 'OK':
+            coords = result['results'][0]['geometry']['location']
+            return f"{coords['lat']},{coords['lng']}", coords['lat'], coords['lng']
+        return None, None, None
+
+    future_start = executor.submit(geocode_address, start_location)
+    future_end = executor.submit(geocode_address, end_location)
+
+    start_coord_str, start_lat, start_lng = future_start.result()
+    end_coord_str, end_lat, end_lng = future_end.result()
+
+    if not all([start_coord_str, end_coord_str]):
+        return jsonify({'message': 'Failed to geocode location'}), 400
+
+    session['pickupcoordinates'] = start_coord_str
+    session['dropcoordinates'] = end_coord_str
+
+    # 🔁 Distance Matrix
+    result = gmaps.distance_matrix(
+        origins=(start_lat, start_lng),
+        destinations=(end_lat, end_lng),
+        mode="driving",
+        departure_time=datetime.datetime.now()
+    )
+
+    if result['status'] != 'OK':
+        return jsonify({'message': 'Failed to fetch distance data'}), 400
+
+    distance = result['rows'][0]['elements'][0]['distance']['text']
+    duration_text = result['rows'][0]['elements'][0]['duration']['text']
+
+    session['ride_distance'] = distance
+    session['ride_duration'] = duration_text
+
+    # 🧠 Calculate end time based on duration
     duration_minutes = 0
-    hours_match = re.search(r'(\d+)\s*hour', duration_text)
-    minutes_match = re.search(r'(\d+)\s*min', duration_text)
+    h = re.search(r'(\d+)\s*hour', duration_text)
+    m = re.search(r'(\d+)\s*min', duration_text)
+    if h: duration_minutes += int(h.group(1)) * 60
+    if m: duration_minutes += int(m.group(1))
 
-    if hours_match:
-        duration_minutes += int(hours_match.group(1)) * 60  # Convert hours to minutes
-    if minutes_match:
-        duration_minutes += int(minutes_match.group(1))
-
-    # Add the duration to the ride_date_time
-    ride_end_time = ride_date_time_obj + datetime.timedelta(minutes=duration_minutes)
-
-    print("ride_end_time ", ride_end_time)
-
-    # Format the ride_end_time to a string and add it to the session
+    ride_end_time = ride_datetime + datetime.timedelta(minutes=duration_minutes)
     session['ride_end_time'] = ride_end_time.strftime('%Y-%m-%dT%H:%M')
 
+    final_datetime = ride_end_time + datetime.timedelta(minutes=13)
+    formatted_datetime = final_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    EndTime = final_datetime.strftime("%I:%M %p")
 
-    new_datetime_obj = ride_end_time + datetime.timedelta(minutes=13)
+    # 🔁 Find pickup/drop cities in parallel
+    future_pickup_city = executor.submit(api.find_city, GOOGLE_MAPS_API_KEY, start_lat, start_lng)
+    future_drop_city = executor.submit(api.find_city, GOOGLE_MAPS_API_KEY, end_lat, end_lng)
 
-    # Convert to the desired format
-    formatted_datetime = new_datetime_obj.strftime("%Y-%m-%d %H:%M:%S")
-    EndTime = new_datetime_obj.strftime("%I:%M %p")  # Fetch only time in AM/PM format
+    pickupcity = future_pickup_city.result()
+    dropcity = future_drop_city.result()
 
-    # Output results
-    print("Formatted DateTime:", formatted_datetime)
-    print("EndTime:", EndTime)
-    print("Time in AM/PM:", StartTime)
+    ride_start_date = datetime_with_buffer.strftime("%d %B %Y")
 
-
-    user = request.cookies.get('username')  # Fetch the 'user' cookie
-
-    print(user)
-
-    coordinates_list = [float(coord) for coord in session['pickupcoordinates'].split(",")]
-    pickupcity = api.find_city(GOOGLE_MAPS_API_KEY, coordinates_list[0], coordinates_list[1])
-
-    dropcoordinates_list = [float(coord) for coord in session["dropcoordinates"].split(",")]
-    dropcity = api.find_city(GOOGLE_MAPS_API_KEY, dropcoordinates_list[0], dropcoordinates_list[1])
-    
-    datetime_obj = datetime.datetime.strptime(formatted_startdate, "%Y-%m-%d %H:%M:%S")
-
-    # Convert to the desired format
-    ride_start_date = datetime_obj.strftime("%d %B %Y")
-
-    print("formatted_date ", ride_start_date)
-    
-    host = api.hostride(start_location, session['pickupcoordinates'], pickupcity, end_location, session['dropcoordinates'], dropcity, ride_start_date, StartTime, EndTime, passenger_count, "₹ "+passenger_price, weight_capacity, "₹ "+weight_price, ride_type, ride_comments, user)
-    print(host)
+    # 🧠 Insert ride (threaded, but we need result)
+    host_future = executor.submit(
+        api.hostride,
+        start_location, start_coord_str, pickupcity,
+        end_location, end_coord_str, dropcity,
+        ride_start_date, StartTime, EndTime,
+        passenger_count, f"₹ {passenger_price}",
+        weight_capacity, f"₹ {weight_price}",
+        ride_type, ride_comments, user
+    )
+    host = host_future.result()
     session['came_from_going'] = False
 
+    if not host:
+        return jsonify({'success': False, 'message': 'Failed to host ride'}), 500
 
-    redirect_url = url_for(
-    'ride_published',
-    pickuplocation=pickupcity,
-    droplocation=dropcity,
-    distance=quote(distance),
-    price=quote(passenger_price)
-    )
-    
+    # 🔁 Check KYC in background (must wait for result)
+    future_kyc = executor.submit(api.check_kyc, user)
+    checkkyc = future_kyc.result()
 
-    if host:
-        # return True
-        user = request.cookies.get('username')  # Fetch the 'user' cookie
-        checkkyc = api.check_kyc(user)
+    if checkkyc == "no":
+        redirect_url = url_for('uploadkyc')
+    else:
+        redirect_url = url_for('ride_published', pickuplocation=pickupcity, droplocation=dropcity, distance=quote(distance), price=quote(passenger_price))
 
-        if checkkyc == "no":
-            redirect_url = url_for('uploadkyc')
-            return jsonify({'success': True, 'redirect_url': redirect_url})
-        else: 
-            redirect_url = url_for('ride_published', pickuplocation=pickupcity, droplocation=dropcity, distance=distance, price=passenger_price)
-            return jsonify({'success': True, 'redirect_url': redirect_url})
-        
+    return jsonify({'success': True, 'redirect_url': redirect_url})
+
 
 @app.route('/ride_details', methods=['GET', 'POST'])
 def ride_details():
@@ -803,55 +775,56 @@ def uploadkyc():
 
 @app.route('/my_hosted_rides')
 def my_hosted_rides():
-    user = request.cookies.get('username')  # Fetch the 'user' cookie
-
+    user = request.cookies.get('username')
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    
     keys = [
         "start_location", "start_coordinated", "pickupcity", "end_location", "end_coordinated", "dropcity", 
         "date", "start_time", "end_time", "passengers", "passengerprice", "kgcount", "kgprice", 
         "ride_type", "details", "userid", "uniqueid", "datetime", "ridepickuplocation", "ridedroplocation"
     ]
 
-    ride = api.fetch_your_rides(user)
+    # 🔁 Fetch user's rides in background
+    future_rides = executor.submit(api.fetch_your_rides, user)
+    ride_data = future_rides.result()
+    print("🎯 Ride data:", ride_data)
 
-    print("ride ", ride)
-
-    name = None  # ✅ Initialize 'name' to avoid UnboundLocalError
+    name = None
     rides = None
 
-    if ride:
-        rides = [dict(zip(keys, entry[:len(keys)])) for entry in ride]
-        name_data = api.find_host_user(rides[0].get('userid'))
-        if name_data:  # ✅ Ensure 'name_data' is not None or empty
+    if ride_data:
+        rides = [dict(zip(keys, entry[:len(keys)])) for entry in ride_data]
+
+        # 🔁 Fetch host name (for first ride)
+        userid = rides[0].get('userid')
+        future_name = executor.submit(api.find_host_user, userid)
+        name_data = future_name.result()
+
+        if name_data:
             name = str(name_data[0] + " " + name_data[1])
 
-        gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
-
-        for ride in rides:
-            start_coords = ride["start_coordinated"]
-            end_coords = ride["end_coordinated"]
-            
+        # 🔁 Enrich each ride with Google Maps distance/duration (parallel)
+        def enrich_ride(ride):
             try:
                 result = gmaps.distance_matrix(
-                    origins=start_coords,
-                    destinations=end_coords,
+                    origins=ride["start_coordinated"],
+                    destinations=ride["end_coordinated"],
                     mode="driving",
                     units="metric"
                 )
-                distance = result["rows"][0]["elements"][0]["distance"]["text"]
-                duration = result["rows"][0]["elements"][0]["duration"]["text"]
-
-                ride["distance"] = distance
-                ride["duration"] = duration
-
+                ride["distance"] = result["rows"][0]["elements"][0]["distance"]["text"]
+                ride["duration"] = result["rows"][0]["elements"][0]["duration"]["text"]
             except Exception as e:
-                print(f"Error fetching data for ride {ride['uniqueid']}: {e}")
+                print(f"[❌] Failed distance for ride {ride['uniqueid']}: {e}")
                 ride["distance"] = "N/A"
                 ride["duration"] = "N/A"
 
+        # Start all distance lookups in parallel
+        futures = [executor.submit(enrich_ride, r) for r in rides]
+        for f in futures:
+            f.result()  # Wait for all to complete
+
     return render_template('my_hosted_rides.html', rides=rides, name=name)
-
-
-    
 
 
 @app.route('/hosted_rides_details')
@@ -880,74 +853,78 @@ def hosted_rides_details():
         "name": request.args.get('name'),
     }
 
-
-    fetch_passengers = api.fetch_passengers(ride_details.get("uniqueid"))
+    # 🔁 Fetch passenger list in background
+    future_passengers = executor.submit(api.fetch_passengers, ride_details.get("uniqueid"))
+    raw_passenger_data = future_passengers.result()
 
     keys = [
-    "name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"
+        "name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"
     ]
 
-    passengers = [dict(zip(keys, entry[:len(keys)])) for entry in fetch_passengers]
+    passengers = [dict(zip(keys, entry[:len(keys)])) for entry in raw_passenger_data] if raw_passenger_data else []
 
-    print(passengers)
+    print("[🚕] Passengers for ride:", passengers)
 
     return render_template('hosted_rides_details.html', ride=ride_details, passengers=passengers)
 
 
 @app.route('/my_rides')
 def my_rides():
-    user = request.cookies.get('username')  # Fetch the 'user' cookie
+    user = request.cookies.get('username')
+
+    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+
 
     keys = [
-    "start_location", "start_coordinated", "pickupcity", "end_location", "end_coordinated", "dropcity", "date", "start_time", "end_time", "passengers", "passengerprice", "kgcount", "kgprice", "ride_type", "details", "userid", "uniqueid", "datetime", "ridepickuplocation", "ridedroplocation"
+        "start_location", "start_coordinated", "pickupcity", "end_location", "end_coordinated", "dropcity",
+        "date", "start_time", "end_time", "passengers", "passengerprice", "kgcount", "kgprice",
+        "ride_type", "details", "userid", "uniqueid", "datetime", "ridepickuplocation", "ridedroplocation"
     ]
 
-    ride = api.fetch_my_rides(user)
+    # 🔁 Fetch user's booked rides in background
+    future_ride_data = executor.submit(api.fetch_my_rides, user)
+    ride_data = future_ride_data.result()
+    print("🎯 My rides:", ride_data)
 
-    print("ride ", ride)
-    # Convert to required format
-    name = None  # ✅ Initialize 'name' to avoid UnboundLocalError
     rides = None
+    name = None
 
-    if ride:
-        rides = [dict(zip(keys, entry[:len(keys)])) for entry in ride]
-        name = api.find_host_user(rides[0].get('userid'))
-        name = str(name[0]+" "+name[1])
+    if ride_data:
+        rides = [dict(zip(keys, entry[:len(keys)])) for entry in ride_data]
 
-        gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+        # 🔁 Host name lookup in parallel
+        future_host = executor.submit(api.find_host_user, rides[0].get('userid'))
+        name_data = future_host.result()
+        name = str(name_data[0] + " " + name_data[1]) if name_data else None
 
-        for ride in rides:
-            start_coords = ride["start_coordinated"]
-            end_coords = ride["end_coordinated"]
-            
-            # Use Google Maps Distance Matrix API
+        # 🔁 Enrich each ride with Google Maps distance/duration (parallel)
+        def enrich_ride(ride):
             try:
                 result = gmaps.distance_matrix(
-                    origins=start_coords,
-                    destinations=end_coords,
-                    mode="driving",  # Options: driving, walking, bicycling, transit
+                    origins=ride["start_coordinated"],
+                    destinations=ride["end_coordinated"],
+                    mode="driving",
                     units="metric"
                 )
-                distance = result["rows"][0]["elements"][0]["distance"]["text"]
-                duration = result["rows"][0]["elements"][0]["duration"]["text"]
-
-                # Add distance and duration to the ride dictionary
-                ride["distance"] = distance
-                ride["duration"] = duration
-
+                ride["distance"] = result["rows"][0]["elements"][0]["distance"]["text"]
+                ride["duration"] = result["rows"][0]["elements"][0]["duration"]["text"]
             except Exception as e:
-                print(f"Error fetching data for ride {ride['uniqueid']}: {e}")
+                print(f"[❌] Error in ride {ride['uniqueid']}: {e}")
                 ride["distance"] = "N/A"
                 ride["duration"] = "N/A"
 
+        # Run all distance lookups in parallel
+        futures = [executor.submit(enrich_ride, ride) for ride in rides]
+        for f in futures:
+            f.result()  # Wait for all threads
 
     return render_template('my_rides.html', rides=rides)
 
 
 @app.route('/my_rides_details')
 def my_rides_details():
-    user = request.cookies.get('username')  # Fetch the 'user' cookie
-    
+    user = request.cookies.get('username')
+
     ride_details = {
         "date": request.args.get('date'),
         "start_time": request.args.get('start_time'),
@@ -972,24 +949,29 @@ def my_rides_details():
         "name": request.args.get('name'),
     }
 
-    fetch_passengers = api.fetch_passengers(ride_details.get("uniqueid"))
+    # 🔁 Fetch passengers in background
+    future_passengers = executor.submit(api.fetch_passengers, ride_details.get("uniqueid"))
+    raw_passengers = future_passengers.result()
 
-    keys = [
-    "name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"
-    ]
+    keys = ["name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"]
+    passengers = [dict(zip(keys, entry[:len(keys)])) for entry in raw_passengers] if raw_passengers else []
 
-    passengers = [dict(zip(keys, entry[:len(keys)])) for entry in fetch_passengers]
+    for p in passengers:
+        try:
+            p['total_count'] = int(p['personcount']) + int(p['kgcount'])
+        except:
+            p['total_count'] = 0
 
-    for passenger in passengers:
-        passenger['total_count'] = int(passenger['personcount']) + int(passenger['kgcount'])
+    # ✅ Filter current user's booking info
+    selected_passenger = next((p for p in passengers if p["number"] == user), None)
 
-    print("user ", passengers)
+    print("user:", user)
+    print("selected_passenger:", selected_passenger)
 
-    selected_passenger = [p for p in passengers if p["number"] == user]
-
-    print("selected_passenger ", selected_passenger)
-
-    return render_template('my_rides_details.html', ride=ride_details, passengers=selected_passenger[0])
+    if selected_passenger:
+        return render_template('my_rides_details.html', ride=ride_details, passengers=selected_passenger)
+    else:
+        return render_template('my_rides_details.html', ride=ride_details, passengers={})
 
 
 @app.route('/book_ride')
@@ -1001,51 +983,34 @@ def book_ride():
 def search_ride_details():
     if request.method == 'POST':
         try:
-            # Parse incoming JSON data
             data = request.json
             if not data:
                 raise ValueError("No JSON data received.")
 
-            # Extract data from the request
             uniqueid = data.get('uniqueid')
-            price = data.get('price', 0)  # Default to 0 if not provided
+            price = data.get('price', 0)
             kgprice = data.get('kgprice', 0)
             start_location = data.get('start_location', "Unknown")
             end_location = data.get('end_location', "Unknown")
 
-            # Fetch user details from cookies
             user = request.cookies.get('username')
             if not user:
                 raise ValueError("User not authenticated.")
 
-            print("User: ", user)
+            # 🔁 Use multithreading to fetch profile
+            future_profile = executor.submit(api.fetch_profile, user)
+            profile = future_profile.result()
 
-            # Fetch user profile details (simulate API call)
-            profile = api.fetch_profile(user)
             if not profile:
                 raise ValueError("Unable to fetch user profile.")
 
-            print("Profile: ", profile)
             name = f"{profile[0][0]} {profile[0][1]}"
             number = profile[0][2]
             email = profile[0][3]
 
-            print("Name: ", name)
-            print("Number: ", number)
-            print("Email: ", email)
-
-            # Print received data for debugging
-            print(f"Received: uniqueid={uniqueid}, price={price}, kgprice={kgprice}, start_location={start_location}, end_location={end_location}")
-
-            # Validate required fields
             if uniqueid is None or price is None or kgprice is None:
                 raise ValueError("Invalid data provided. All fields are required.")
 
-            # Simulate booking the ride (replace with actual API call)
-            # book_ride_result = api.book_ride(name, number, price, kgprice, uniqueid, "pending")
-            # print("Booking Result: ", book_ride_result)
-
-            # Respond with success and redirect URL
             return jsonify({
                 'redirect': url_for(
                     'book_ride',
@@ -1067,9 +1032,8 @@ def search_ride_details():
             print(f"Unexpected Error: {str(e)}")
             return jsonify({"error": "An unexpected error occurred."}), 500
 
-    else:  # Handle GET request
+    else:
         try:
-            # Extract ride details from query parameters
             ride_details = {
                 "date": request.args.get('date'),
                 "start_time": request.args.get('start_time'),
@@ -1089,22 +1053,21 @@ def search_ride_details():
                 "userid": request.args.get('userid'),
             }
 
-            print("Ride Details: ", ride_details)
-
-            # Simulate fetching passengers (replace with actual API call)
-            fetch_passengers = api.fetch_passengers(ride_details.get("uniqueid"))
-            keys = ["name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"]
-            passengers = [dict(zip(keys, entry[:len(keys)])) for entry in fetch_passengers]
-
-            print("Passengers: ", passengers)
-
+            uniqueid = ride_details.get("uniqueid")
             user = request.cookies.get('username')
-            
-            fetch_vehicle = api.fetch_vehicle(user)
-            keys = ["carcompany", "carnumber", "carmodel", "userid", "datetime"]
-            carmodel = [dict(zip(keys, entry[:len(keys)])) for entry in fetch_vehicle]
 
-            print("carmodel: ", carmodel)
+            # 🔁 Fetch passengers and vehicle data in parallel
+            future_passengers = executor.submit(api.fetch_passengers, uniqueid)
+            future_vehicle = executor.submit(api.fetch_vehicle, user)
+
+            fetch_passengers = future_passengers.result()
+            fetch_vehicle = future_vehicle.result()
+
+            passenger_keys = ["name", "number", "personcount", "kgcount", "uniqueid", "approval", "datetime"]
+            passengers = [dict(zip(passenger_keys, entry[:len(passenger_keys)])) for entry in fetch_passengers]
+
+            vehicle_keys = ["carcompany", "carnumber", "carmodel", "userid", "datetime"]
+            carmodel = [dict(zip(vehicle_keys, entry[:len(vehicle_keys)])) for entry in fetch_vehicle]
 
             return render_template('search_ride_details.html', ride=ride_details, passengers=passengers, carmodel=carmodel)
 
@@ -1180,23 +1143,23 @@ def create_order():
 @app.route('/capture_payment', methods=['GET', 'POST'])
 def capture_payment():
     user = request.cookies.get('username')
-    uniqueid = session.get('uniqueid', None)
-    price = session.get('price', None)
-    kgprice = session.get('kgprice', None)
+    uniqueid = session.get('uniqueid')
+    price = session.get('price')
+    kgprice = session.get('kgprice')
     
-    order_id = request.args.get("order_id")  # Get order_id from URL
-    
+    order_id = request.args.get("order_id")
     if not order_id:
         return jsonify({"error": "Missing order_id in request"}), 400
-    
-    api_response = Cashfree().PGOrderFetchPayments(x_api_version, order_id, None)
-    
+
+    # 🔁 Run Cashfree fetch in background
+    future_payment = executor.submit(Cashfree().PGOrderFetchPayments, x_api_version, order_id, None)
+    api_response = future_payment.result()
+
     if not api_response.data:
         return jsonify({"error": "No payment data found for this order"}), 404
-    
-    # Extract payment details
-    payment = api_response.data[0]  # Assuming only one payment entity
-    
+
+    payment = api_response.data[0]
+
     payment_details = {
         "cf_payment_id": payment.cf_payment_id,
         "order_id": payment.order_id,
@@ -1213,59 +1176,61 @@ def capture_payment():
         "uniqueid": uniqueid,
         "contact": user
     }
-    
-    # Detect and extract payment method details
-    if isinstance(payment.payment_method.actual_instance, PaymentMethodAppInPaymentsEntity):
+
+    # Extract payment method
+    instance = payment.payment_method.actual_instance
+    if isinstance(instance, PaymentMethodAppInPaymentsEntity):
         payment_details["payment_method"] = {
             "type": "Wallet/App",
-            "provider": payment.payment_method.actual_instance.app.provider,
-            "channel": payment.payment_method.actual_instance.app.channel,
-            "phone": payment.payment_method.actual_instance.app.phone,
+            "provider": instance.app.provider,
+            "channel": instance.app.channel,
+            "phone": instance.app.phone,
         }
-    elif isinstance(payment.payment_method.actual_instance, PaymentMethodUPIInPaymentsEntity):
+    elif isinstance(instance, PaymentMethodUPIInPaymentsEntity):
         payment_details["payment_method"] = {
             "type": "UPI",
-            "upi_id": getattr(payment.payment_method.actual_instance.upi, "upi_id", "Unknown"),  # Adjust as per debug output
-            "upi_provider": getattr(payment.payment_method.actual_instance.upi, "provider", "Unknown"),
+            "upi_id": getattr(instance.upi, "upi_id", "Unknown"),
+            "upi_provider": getattr(instance.upi, "provider", "Unknown"),
         }
-    elif isinstance(payment.payment_method.actual_instance, PaymentMethodNetBankingInPaymentsEntity):
+    elif isinstance(instance, PaymentMethodNetBankingInPaymentsEntity):
         payment_details["payment_method"] = {
             "type": "Net Banking",
-            "bank_name": getattr(payment.payment_method.actual_instance.netbanking, "bank_code", "Unknown"),  # Adjust as per debug output
+            "bank_name": getattr(instance.netbanking, "bank_code", "Unknown"),
         }
-    elif isinstance(payment.payment_method.actual_instance, PaymentMethodCardInPaymentsEntity):
+    elif isinstance(instance, PaymentMethodCardInPaymentsEntity):
         payment_details["payment_method"] = {
             "type": "Card",
-            "card_type": getattr(payment.payment_method.actual_instance.card, "card_type", "Unknown"),
-            "last4": payment.payment_method.actual_instance.card.card_number if hasattr(payment.payment_method.actual_instance.card, "card_number") else "Unknown",
-            "network": getattr(payment.payment_method.actual_instance.card, "card_brand", "Unknown"),  # Adjusted key name
+            "card_type": getattr(instance.card, "card_type", "Unknown"),
+            "last4": getattr(instance.card, "card_number", "Unknown"),
+            "network": getattr(instance.card, "card_brand", "Unknown"),
         }
     else:
         payment_details["payment_method"] = {
             "type": "Unknown"
         }
-    
+
     print("Payment Details:", payment_details)
 
-    if payment_details["payment_status"] == "SUCCESS":
-        print("SUCCESS")
-        payment_insert = api.insert_payment(payment_details)
-        if payment_insert == True:
-            # Attempt to book the ride (simulated API call here)
-            user = request.cookies.get('username')  # Fetch the 'user' cookie
-            profile = api.fetch_profile(user)
-            print("Profile: ", profile)
-            name = f"{profile[0][0]} {profile[0][1]}"
-            number = profile[0][2]
-            email = profile[0][3]
-            book_ride_result = api.book_ride(name, number, price, kgprice, uniqueid, "pending")
-            print("Booking Result: ", book_ride_result)
-            return redirect(url_for('payment_success'))
-        else:
-            return redirect(url_for('payment_failed'))
-    else:
-        payment_insert = api.insert_payment(payment_details)
-        return redirect(url_for('payment_failed'))
+    # Insert payment async
+    future_insert = executor.submit(api.insert_payment, payment_details)
+    payment_insert = future_insert.result()
+
+    if payment_details["payment_status"] == "SUCCESS" and payment_insert:
+        # Fetch profile and book ride in parallel
+        future_profile = executor.submit(api.fetch_profile, user)
+        profile = future_profile.result()
+
+        name = f"{profile[0][0]} {profile[0][1]}"
+        number = profile[0][2]
+        email = profile[0][3]
+
+        future_book = executor.submit(api.book_ride, name, number, price, kgprice, uniqueid, "pending")
+        book_result = future_book.result()
+
+        print("Booking Result:", book_result)
+        return redirect(url_for('payment_success'))
+
+    return redirect(url_for('payment_failed'))
 
 
 @app.route('/payment_success')
@@ -1283,12 +1248,17 @@ def delete_ride():
     data = request.get_json()
     uniqueid = data.get('uniqueid')
 
-    deletereide = api.delete_ride(uniqueid)
+    if not uniqueid:
+        return jsonify({'success': False, 'message': 'Unique ID is missing'}), 400
 
-    if deletereide == True:
+    # Run delete operation in a thread to avoid blocking
+    future = executor.submit(api.delete_ride, uniqueid)
+    deleteride = future.result()
+
+    if deleteride:
         return jsonify({'success': True, 'message': 'Ride deleted successfully'})
     else:
-        return jsonify({'success': False, 'message': 'Unique ID is missing'})
+        return jsonify({'success': False, 'message': 'Failed to delete ride'}), 500
 
 
 @app.route('/delete_my_ride', methods=['POST'])
@@ -1297,12 +1267,17 @@ def delete_my_ride():
     uniqueid = data.get('uniqueid')
     user = request.cookies.get('username')  # Fetch the 'user' cookie
 
-    deletereide = api.delete_my_ride(uniqueid, user)
+    if not uniqueid or not user:
+        return jsonify({'success': False, 'message': 'Missing unique ID or user'}), 400
 
-    if deletereide == True:
+    # Offload to a background thread
+    future = executor.submit(api.delete_my_ride, uniqueid, user)
+    deleteride = future.result()
+
+    if deleteride:
         return jsonify({'success': True, 'message': 'Ride deleted successfully'})
     else:
-        return jsonify({'success': False, 'message': 'Unique ID is missing'})
+        return jsonify({'success': False, 'message': 'Failed to delete ride'}), 500
 
 
 @app.route('/reject_passenger', methods=['POST'])
@@ -1311,14 +1286,18 @@ def reject_passenger():
         data = request.get_json()
         number = data.get('number')
 
-        print(number)
-        
-        passengeractivity = api.passenger_activity("rejected", number)
+        if not number:
+            return jsonify({'success': False, 'message': 'Missing passenger number'}), 400
 
-        print(passengeractivity)
+        # Run passenger activity in a separate thread
+        future = executor.submit(api.passenger_activity, "rejected", number)
+        passengeractivity = future.result()
+
+        print("Passenger activity result:", passengeractivity)
 
         return jsonify({'success': True, 'message': 'Passenger rejected successfully!'})
     except Exception as e:
+        print("Error:", e)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -1328,18 +1307,20 @@ def approve_passenger():
         data = request.get_json()
         number = data.get('number')
 
-        print(number)
+        if not number:
+            return jsonify({'success': False, 'message': 'Missing passenger number'}), 400
 
-        passengeractivity = api.passenger_activity("accepted", number)
+        print("Approving passenger number:", number)
 
-        print(passengeractivity)
+        # Run the passenger activity in a background thread
+        future = executor.submit(api.passenger_activity, "accepted", number)
+        passengeractivity = future.result()  # Wait for result if you need the output
 
-        # Perform your logic here (e.g., database operations)
-        # For example:
-        # approve_passenger_in_db(number)
+        print("Passenger activity result:", passengeractivity)
 
         return jsonify({'success': True, 'message': 'Passenger approved successfully!'})
     except Exception as e:
+        print("Error:", e)
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -1347,36 +1328,55 @@ def approve_passenger():
 def profile():
     user = request.cookies.get('username')  # Fetch the 'user' cookie
 
-    print(user)
+    print("user ", user)
 
-    profile = api.fetch_profile(user)
-    # print(profile)
+    if not user:
+        return redirect(url_for('login'))
 
-    keys = [
-    "firstname", "lastnumber", "number", "emailid", "dob", "ipaddress", "uniqueid", "password", "emailverification", "kycverification", "datetime"
+    print("Logged in user:", user)
+
+    # Start all API calls concurrently
+    future_profile = executor.submit(api.fetch_profile, user)
+    future_vehicles = executor.submit(api.fetch_vehicle, user)
+    future_banks = executor.submit(api.fetch_bank_account, user)
+
+    # Wait for results
+    profile = future_profile.result()
+    vehicles = future_vehicles.result()
+    banks = future_banks.result()
+
+    # Process profile data
+    profile_keys = [
+        "firstname", "lastnumber", "number", "emailid", "dob", "ipaddress", 
+        "uniqueid", "password", "emailverification", "kycverification", "datetime"
     ]
+    # Validate and process profile
+    passengers = []
+    if isinstance(profile, (list, tuple)):
+        # If it's a single tuple, wrap it in a list
+        if isinstance(profile, tuple):
+            profile = [profile]
+        
+        for entry in profile:
+            if isinstance(entry, (list, tuple)) and len(entry) >= len(profile_keys):
+                passengers.append(dict(zip(profile_keys, entry)))
+            else:
+                print("Invalid profile entry skipped:", entry)
+    else:
+        print("Profile is not list or tuple:", profile)
 
-    passengers = [dict(zip(keys, entry[:len(keys)])) for entry in profile]
 
-    print(passengers)
+    print("Profile:", passengers)
 
-    vehicles = api.fetch_vehicle(user)
-    print(vehicles)
+    # Process vehicle data
+    vehicle_keys = ["carcompany", "carnumber", "carmodel", "userid", "datetime"]
+    vehicles = [dict(zip(vehicle_keys, entry[:len(vehicle_keys)])) for entry in vehicles]
+    print("Vehicles:", vehicles)
 
-    vehicles_keys = [
-    "carcompany", "carnumber", "carmodel", "userid", "datetime"
-    ]
-
-    vehicles = [dict(zip(vehicles_keys, entry[:len(vehicles_keys)])) for entry in vehicles]
-
-    banks = api.fetch_bank_account(user)
-    print(banks)
-
-    bank_keys = [
-    "bankname", "accountnumber", "ifscode", "holder_name", "userid", "datetime"
-    ]
-
+    # Process bank data
+    bank_keys = ["bankname", "accountnumber", "ifscode", "holder_name", "userid", "datetime"]
     banks_arrays = [dict(zip(bank_keys, entry[:len(bank_keys)])) for entry in banks]
+    print("Banks:", banks_arrays)
 
     return render_template('profile.html', passengers=passengers, vehicles=vehicles, banks_arrays=banks_arrays)
 
@@ -1404,77 +1404,64 @@ def allowed_file(filename):
     return False
 
 
+def process_kyc_upload(user, frontfile, backfile, front_path, back_path):
+    try:
+        # Save using Pillow
+        front_img = Image.open(frontfile)
+        front_img.save(front_path)
+
+        back_img = Image.open(backfile)
+        back_img.save(back_path)
+
+        # Call KYC API in background
+        print(f'Files uploaded successfully: {front_path}, {back_path}')
+        update_kyc = api.update_kyc(user)
+        print("KYC Update Status:", update_kyc)
+    except Exception as e:
+        print("Error in thread:", e)
+
+
 @app.route('/add_kyc', methods=['GET', 'POST'])
 def add_kyc():
     user = request.cookies.get('username')  # Fetch the 'user' cookie
+
     if request.method == 'POST':
-        # Get files from the form
         frontfile = request.files.get('frontfile')
         backfile = request.files.get('backfile')
 
-        # Validate presence of files
         if not frontfile or not frontfile.filename:
-            print('Front file is missing or has no filename.')
+            print('Front file is missing.')
             return redirect(request.url)
-
         if not backfile or not backfile.filename:
-            print('Back file is missing or has no filename.')
+            print('Back file is missing.')
             return redirect(request.url)
 
-        # Validate file types
-        if not allowed_file(frontfile.filename):
-            print('Front file type is not allowed. Only PNG, JPG, and JPEG are supported.')
-            return redirect(request.url)
-
-        if not allowed_file(backfile.filename):
-            print('Back file type is not allowed. Only PNG, JPG, and JPEG are supported.')
+        if not allowed_file(frontfile.filename) or not allowed_file(backfile.filename):
+            print('Invalid file format.')
             return redirect(request.url)
 
         try:
-            # Extract extensions safely
-            front_extension = frontfile.filename.rsplit('.', 1)[-1].lower()
-            back_extension = backfile.filename.rsplit('.', 1)[-1].lower()
-
-            print("front_extension ", front_extension)
-            print("back_extension ", back_extension)
-
-            # Generate unique filenames
             front_filename = generate_filename(frontfile.filename, 'front', user)
             back_filename = generate_filename(backfile.filename, 'back', user)
 
-            print("front_filename ", front_filename)
-            print("back_filename ", back_filename)
-
-            # Save paths
             front_path = os.path.join(app.config['UPLOAD_FOLDER'], front_filename)
             back_path = os.path.join(app.config['UPLOAD_FOLDER'], back_filename)
 
-            print("front_path ", front_path)
-            print("back_path ", back_path)
+            # Copy file objects for threading (reset stream position)
+            frontfile.stream.seek(0)
+            backfile.stream.seek(0)
+            front_copy = frontfile.read()
+            back_copy = backfile.read()
 
-            # Save files using Pillow for image validation
-            try:
-                front_img = Image.open(frontfile)
-                front_img.save(front_path)
-            except UnidentifiedImageError:
-                print('Front file is not a valid image.')
-                return redirect(request.url)
+            # Run image save and KYC update in background thread
+            thread = Thread(target=process_kyc_upload, args=(user, BytesIO(front_copy), BytesIO(back_copy), front_path, back_path))
+            thread.start()
 
-            try:
-                back_img = Image.open(backfile)
-                back_img.save(back_path)
-            except UnidentifiedImageError:
-                print('Back file is not a valid image.')
-                return redirect(request.url)
-
-            # Success
-            print(f'Files uploaded successfully: {front_filename}, {back_filename}')
-            update_kyc = api.update_kyc(user)
-            print(update_kyc)
+            print("KYC submission in progress. You'll be updated shortly.")
             return redirect(url_for('profile'))
 
         except Exception as e:
-            print(f'An error occurred while processing the images: {e}')
+            print('Error during processing:', e)
             return redirect(request.url)
 
     return render_template('add_kyc.html')
@@ -1483,10 +1470,10 @@ def add_kyc():
 @app.route('/send_email_verification', methods=['POST'])
 def send_email_verification():
     user = request.cookies.get('username')  # Fetch the 'user' cookie
-    # Check if request body contains JSON
+
     if not request.is_json:
         return jsonify({"error": "Request body must be JSON"}), 400
-    # Extract the email from the request body
+
     data = request.get_json()
     email = data.get('email')
 
@@ -1495,15 +1482,19 @@ def send_email_verification():
     if not email:
         return jsonify({"error": "Email is missing"}), 400
 
-    # Simulate email sending logic (replace this with your actual logic)
-    try:
-        print(f"Sending verification email to {email}")
-        sendmail = api.send_verification_mail(email, user)
-        print(sendmail)
-        return jsonify({"message": "Verification email sent successfully!"}), 200
-    except Exception as e:
-        print(f"Error while sending email: {e}")
-        return jsonify({"error": "Failed to send verification email"}), 500
+    # ✅ Background task function
+    def send_verification_email(email, user):
+        try:
+            print(f"Sending verification email to {email}")
+            sendmail = api.send_verification_mail(email, user)
+            print("Mail API result:", sendmail)
+        except Exception as e:
+            print(f"Error while sending email in background thread: {e}")
+
+    # ✅ Start email sending in background
+    Thread(target=send_verification_email, args=(email, user)).start()
+
+    return jsonify({"message": "Verification email is being sent!"}), 200
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -1512,13 +1503,24 @@ def change_password():
 
     if request.method == 'POST':
         password = request.form['password']
-        print(password)
-        change = api.change_password(user, password)
-        
-        if change == True:
-            print("working")
-            return redirect(url_for('profile'))
-        
+        print("Received password:", password)
+
+        # ✅ Define background task
+        def update_password():
+            try:
+                change = api.change_password(user, password)
+                if change:
+                    print("Password updated successfully in background")
+                else:
+                    print("Password update failed in background")
+            except Exception as e:
+                print("Error in background password update:", e)
+
+        # ✅ Run in background thread
+        Thread(target=update_password).start()
+
+        return redirect(url_for('profile'))  # Respond immediately
+
     return render_template('change_password.html')
 
 
@@ -1534,13 +1536,20 @@ def add_vehicle():
         print(carnumber)
         print(carmodel)
 
-        add = api.add_vehicle(user, company, carnumber, carmodel)
+        # ✅ Define background function
+        def add_vehicle_background():
+            try:
+                result = api.add_vehicle(user, company, carnumber, carmodel)
+                print("Vehicle added (background):", result)
+            except Exception as e:
+                print("Error adding vehicle in background:", e)
 
-        print("add ", add)
+        # ✅ Start background thread
+        Thread(target=add_vehicle_background).start()
 
-        if add is True:
-            return redirect(url_for('profile'))
-    
+        # ✅ Redirect immediately
+        return redirect(url_for('profile'))
+
     return render_template('add_vehicle.html')
 
 
@@ -1553,35 +1562,37 @@ def add_bank_account():
         accountnumber = request.form['accountnumber']
         ifscode = request.form['ifscode']
         holdername = request.form['name']
-        print(bankname)
-        print(accountnumber)
-        print(ifscode)
-        print(holdername)
 
-        add = api.add_bank_account(user, bankname, accountnumber, ifscode, holdername)
+        print(bankname, accountnumber, ifscode, holdername)
 
-        print("add ", add)
+        # ✅ Background task definition
+        def add_bank_background():
+            try:
+                result = api.add_bank_account(user, bankname, accountnumber, ifscode, holdername)
+                print("Bank account added (background):", result)
+            except Exception as e:
+                print("Error adding bank account in background:", e)
 
-        if add is True:
-            return redirect(url_for('profile'))
-    
+        # ✅ Start background thread
+        Thread(target=add_bank_background).start()
+
+        # ✅ Redirect immediately
+        return redirect(url_for('profile'))
+
     return render_template('add_bank_account.html')
 
 
 @app.route('/logout')
 def logout():
     session.clear()
-    response = make_response(redirect(url_for('home')))
-    
-    response.set_cookie('username', '', expires=0)
 
-    session.clear()
-    
-    # Delete cookies by setting the expiration to a past date
+    response = make_response(redirect(url_for('home')))
+
+    # Clear cookies by setting them to expire
     response.set_cookie('username', '', expires=0)
-    response.set_cookie('session_id', '', expires=0)  # Example of deleting a session cookie
-  
-    return render_template('index.html')
+    response.set_cookie('session_id', '', expires=0)
+
+    return response
 
 
 @app.route('/tnc')
@@ -1628,5 +1639,5 @@ if __name__ == '__main__':
     # app.run(debug=True)
     # app = WsgiToAsgi(app)
     #app.run(port=8080, debug=True)
-    socketio.run(app, debug=True, port=8080, allow_unsafe_werkzeug=True)
-
+    #socketio.run(app, debug=True, port=6060, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=6060, allow_unsafe_werkzeug=True)
